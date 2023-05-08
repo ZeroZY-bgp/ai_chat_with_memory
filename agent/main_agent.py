@@ -51,7 +51,7 @@ class VectorStore:
         self.path = path
         self.vs_path, _ = init_knowledge_vector_store(embeddings=embeddings, filepath=self.path)
         self.core = FAISS.load_local(self.vs_path, embeddings)
-        self.core.chunk_size = chunk_size
+        # self.core.chunk_size = chunk_size
         # FAISS.similarity_search_with_score_by_vector = similarity_search_with_score_by_vector
 
     def similarity_search_with_score(self, query):
@@ -122,16 +122,16 @@ class MainAgent(AbstractAgent):
         self.identity_file = 'agent/memory/' + self.world_name + '/global/all.txt'
         self.event_file = 'agent/memory/' + self.world_name + '/local/' + self.ai_name + '/event.txt'
         self.file_lst = []
-        self.identity_vs = VectorStore(self.embeddings, self.identity_file, chunk_size=30,
+        self.identity_vs = VectorStore(self.embeddings, self.identity_file, chunk_size=1,
                                        top_k=6)
         if self.lock_memory:
-            self.history_vs = VectorStore(self.embeddings, self.history_file, chunk_size=100,
+            self.history_vs = VectorStore(self.embeddings, self.history_file, chunk_size=1,
                                           top_k=6)
         if not self.lock_event:
             # 事件识别器
             self.event_det = EventDetector()
         else:
-            self.event_vs = VectorStore(self.embeddings, self.event_file, chunk_size=10,
+            self.event_vs = VectorStore(self.embeddings, self.event_file, chunk_size=1,
                                         top_k=3)
         print("【---记忆模块加载完成---】")
         # ---model
@@ -176,8 +176,8 @@ class MainAgent(AbstractAgent):
         else:
             get_related_text_lst(query,
                                  VectorStore(self.embeddings, self.history_file,
-                                             chunk_size=self.context_chunk_size,
-                                             top_k=self.memory_search_top_k),
+                                             chunk_size=30,
+                                             top_k=6),
                                  related_text_lst)
         # 交互事件记忆
         if self.lock_event:
@@ -185,8 +185,8 @@ class MainAgent(AbstractAgent):
         else:
             get_related_text_lst(query,
                                  VectorStore(self.embeddings, self.event_file,
-                                             chunk_size=self.context_chunk_size,
-                                             top_k=self.memory_search_top_k),
+                                             chunk_size=20,
+                                             top_k=3),
                                  related_text_lst)
 
         context = collect_context(related_text_lst)
