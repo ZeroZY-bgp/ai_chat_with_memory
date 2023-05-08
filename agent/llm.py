@@ -2,8 +2,6 @@ import copy
 from abc import abstractmethod
 
 import openai
-import gpt4free
-from gpt4free import Provider, forefront
 from transformers import AutoTokenizer, AutoModel
 
 from agent.chatgpt_tools import EventDetector
