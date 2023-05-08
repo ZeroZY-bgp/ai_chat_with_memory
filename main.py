@@ -4,7 +4,7 @@ from agent.chatgpt_tools import EventGenerator
 
 def chat_with_ai():
     agent = MainAgent(world_name="A_02",
-                      ai_name='Alice',
+                      ai_name='Lisa',
                       model_name='gpt3_5',
                       lock_memory=True,
                       lock_event=True,

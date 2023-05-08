@@ -7,7 +7,7 @@ from transformers import AutoTokenizer, AutoModel
 from agent.chatgpt_tools import EventDetector
 from agent.utils import append_to_lst_file
 
-openai.api_key = ''
+openai.api_key = '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'
 
 
 class BaseLLM:
@@ -44,7 +44,7 @@ class BaseLLM:
         self.basic_history = basic_history
         self.history = copy.deepcopy(self.basic_history)
         self.basic_token_len = len(self.basic_history[0][0]) + len(self.basic_history[0][1])
-        self.total_token_size = self.basic_token_len
+        self.total_token_size = 0
 
     def set_max_history_size(self, max_history_size):
         self.max_history_size = max_history_size
@@ -54,14 +54,23 @@ class BaseLLM:
              context: str) -> str:
         # 将上下文加入到最开头的提示词中
         context = context.replace("{{{AI_NAME}}}", self.ai_name)
-        init_str = self.history[0][0].replace("{{{context}}}", context).replace("{{{AI_NAME}}}", self.ai_name)
-        init_str2 = self.history[0][1].replace("{{{AI_NAME}}}", self.ai_name)
-        self.history[0] = (init_str, init_str2)
+        history_and_context = self.history[0][0].replace("{{{context}}}", context).replace("{{{AI_NAME}}}", self.ai_name)
+        first_ans = self.history[0][1].replace("{{{AI_NAME}}}", self.ai_name)
+
+        print("context len:", len(context))
+        print("history_and_context len:", len(history_and_context))
+        print("first_ans len:", len(first_ans))
+
+        self.history[0] = (history_and_context, first_ans)
+
         print(self.history[0][0])
+
         ans = self.get_response(query)
         self.history.append((query, ans))
         self.total_token_size += (len(ans) + len(query))
+
         print("Token size:", self.total_token_size + len(context))
+
         # 窗口控制
         self.history_window_control(context)
         # 恢复最开头的提示词
@@ -77,7 +86,7 @@ class BaseLLM:
 
     def history_window_control(self, context):
         if self.total_token_size + len(context) >= self.max_history_size:
-            while self.total_token_size > (self.max_history_size - 400):
+            while self.total_token_size + len(context) > (self.max_history_size - 400):
                 self.total_token_size -= (len(self.history[1][0]) + len(self.history[1][1]))
                 self.history.pop(1)
             print("窗口缩小， 历史对话：")

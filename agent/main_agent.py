@@ -6,7 +6,7 @@ from agent.abstract_agent import AbstractAgent
 from agent.chatglm_classifier import Classifier
 from agent.audio import AudioModule
 from agent.chatgpt_tools import EventDetector
-from agent.utils import init_knowledge_vector_store, similarity_search_with_score_by_vector, append_to_lst_file
+from agent.utils import init_knowledge_vector_store
 from agent.llm import Gpt3_5LLM, ChatGLMLLM
 
 device = 'cuda'
@@ -52,7 +52,7 @@ class VectorStore:
         self.vs_path, _ = init_knowledge_vector_store(embeddings=embeddings, filepath=self.path)
         self.core = FAISS.load_local(self.vs_path, embeddings)
         self.core.chunk_size = chunk_size
-        FAISS.similarity_search_with_score_by_vector = similarity_search_with_score_by_vector
+        # FAISS.similarity_search_with_score_by_vector = similarity_search_with_score_by_vector
 
     def similarity_search_with_score(self, query):
         return self.core.similarity_search_with_score(query, self.top_k)
