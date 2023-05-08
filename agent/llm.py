@@ -122,40 +122,6 @@ class Gpt3_5LLM(BaseLLM):
         return response.choices[0].message.content
 
 
-class Gpt4LLM(BaseLLM):
-    model_name = 'gpt-4'
-    temperature = 0.01
-    token = None
-
-    def __init__(self, ai_name, world_name, lock_memory=False, temperature=0.01, max_token=1000):
-        super().__init__(ai_name, lock_memory, world_name)
-        self.temperature = temperature
-        self.max_token = max_token
-        self.token = forefront.Account.create(logging=False)
-
-    def send(self, massages):
-        response = gpt4free.Completion.create(
-            Provider.ForeFront, prompt=massages, model='gpt-4', token=self.token
-        )
-        return response
-
-    def create_massages(self, query):
-        massages = ""
-        for i in range(len(self.history)):
-            massages += ('user:' + self.history[i][0])
-            massages += ('assistant:' + self.history[i][1])
-
-        massages += ('user:' + query)
-
-        return massages
-
-    def get_response(self, query):
-        massages = self.create_massages(query)
-        print(massages)
-        ans = self.send(massages)
-        return ans
-
-
 class ChatGLMLLM(BaseLLM):
     tokenizer: object = None
     model: object = None

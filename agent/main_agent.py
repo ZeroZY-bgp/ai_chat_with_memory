@@ -7,12 +7,9 @@ from agent.chatglm_classifier import Classifier
 from agent.audio import AudioModule
 from agent.chatgpt_tools import EventDetector
 from agent.utils import init_knowledge_vector_store, similarity_search_with_score_by_vector, append_to_lst_file
-from agent.llm import Gpt3_5LLM, ChatGLMLLM, Gpt4LLM
+from agent.llm import Gpt3_5LLM, ChatGLMLLM
 
 device = 'cuda'
-
-
-# device = torch.device("opencl:0")
 # device = 'cpu'
 
 
@@ -114,19 +111,13 @@ class MainAgent(AbstractAgent):
             rate = 150
 
         self.streaming = streaming
-        embedding_model_path = 'text2vec/GanymedeNil_text2vec-large-chinese'
+        # embedding_model_path = 'text2vec/GanymedeNil_text2vec-large-chinese'
+        embedding_model_path = 'GanymedeNil/text2vec-large-chinese'
         self.index_path = 'agent/memory/' + self.world_name + '/index.txt'
         embedding_device = 'cuda'
         # self.streaming = streaming
         self.embeddings = HuggingFaceEmbeddings(model_name=embedding_model_path,
                                                 model_kwargs={'device': embedding_device})
-        # self.index_search = False
-        # if self.index_search:
-        #     self.index_vector_store = VectorStore(self.embeddings, self.index_path, top_k=2, chunk_size=1)
-        # else:
-        #     self.history_file = 'agent/memory/' + self.world_name + '/对话/' + self.ai_name + '/history.txt'
-        #     self.identity_file = 'agent/memory/' + self.world_name + '/身份/all.txt'
-        #     self.event_file = 'agent/memory/' + self.world_name + '/对话/{{{AI_NAME}}}/event.txt'
         self.history_file = 'agent/memory/' + self.world_name + '/local/' + self.ai_name + '/history.txt'
         self.identity_file = 'agent/memory/' + self.world_name + '/global/all.txt'
         self.event_file = 'agent/memory/' + self.world_name + '/local/' + self.ai_name + '/event.txt'
@@ -152,8 +143,6 @@ class MainAgent(AbstractAgent):
         elif self.model_name == 'gpt3_5':
             self.llm = Gpt3_5LLM(ai_name=self.ai_name, world_name=self.world_name,
                                  lock_memory=self.lock_memory, temperature=0.01)
-        elif self.model_name == 'gpt4':
-            self.llm = Gpt4LLM(self.ai_name, world_name=self.world_name, lock_memory=self.lock_memory)
         else:
             raise AttributeError("模型选择参数出错！传入的参数为", self.model_name)
         # 初始化提示语
@@ -176,42 +165,8 @@ class MainAgent(AbstractAgent):
             print("【---话题分类器加载完成---】")
 
     def chat(self, query):
-        # 查找目录中与提问相关性高的记忆文件
-        # file_lst_buffer = [self.history_file, self.identity_file,
-        #                    self.event_file.replace("{{{AI_NAME}}}", self.ai_name)]
-        # if self.index_search:
-        #     related_index_with_score = self.index_vector_store.similarity_search_with_score(query)
-        #     related_index = get_docs_with_score(related_index_with_score)
-        #     for i in range(len(related_index)):
-        #         file_lst_buffer.extend(get_txt_addr(related_index[i].page_content, self.world_name))
-        # else:
-        #     file_lst_buffer.append(self.history_file)
-        #     file_lst_buffer.append(self.identity_file)
-        #     file_lst_buffer.append(self.event_file.replace("{{{AI_NAME}}}", self.ai_name))
-        # 去除重复地址
-        # file_lst_buffer = list(set(file_lst_buffer))
         # 相似文本列表
         related_text_lst = []
-        # if self.lock_memory:
-        #     for i in range(len(file_lst_buffer)):
-        #         if file_lst_buffer[i] not in self.file_lst:
-        #             self.file_lst.append(file_lst_buffer[i])
-        #             self.vector_store_lst.append(
-        #                 VectorStore(self.embeddings,
-        #                             file_lst_buffer[i],
-        #                             chunk_size=self.context_chunk_size,
-        #                             top_k=self.memory_search_top_k))
-        #     for i in range(len(self.vector_store_lst)):
-        #         related_text_with_score = self.vector_store_lst[i].similarity_search_with_score(query)
-        #         related_text_lst.extend(get_docs_with_score(related_text_with_score))
-        # else:
-        #     for i in range(len(file_lst_buffer)):
-        #         related_text_with_score = \
-        #             VectorStore(self.embeddings,
-        #                         file_lst_buffer[i],
-        #                         chunk_size=self.context_chunk_size,
-        #                         top_k=self.memory_search_top_k).similarity_search_with_score(query)
-        #         related_text_lst.extend(get_docs_with_score(related_text_with_score))
         # 直接加载记忆模块
         # 身份，世界观记忆
         get_related_text_lst(query, self.identity_vs, related_text_lst)
