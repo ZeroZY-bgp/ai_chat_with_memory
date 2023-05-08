@@ -83,7 +83,7 @@ class MainAgent(AbstractAgent):
         """
 
         :param world_name: 世界名称，不同世界对应不同人设。
-        :param model_name: 模型名称，可用：chatglm、gpt3_5、gpt4。
+        :param model_name: 模型名称，可用：chatglm、gpt3_5。
         :param lock_memory: 锁定对话记忆，为False时每次对话都要读取记忆文件，速度较慢，但每次对话增加新的对话到记忆文件中；
                             为True仅第一次加载时读取记忆文件，速度较快，但不增加新的记忆。
         :param lock_event: 锁定事件记忆，为False时会产生事件记录（如一个角色与另一个角色的互动），为True则不产生
