@@ -9,7 +9,7 @@ from transformers import AutoTokenizer, AutoModel
 from agent.chatgpt_tools import EventDetector
 from agent.utils import append_to_lst_file
 
-openai.api_key = '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'
+openai.api_key = ''
 
 
 class BaseLLM:
