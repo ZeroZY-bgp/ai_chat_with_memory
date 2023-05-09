@@ -5,9 +5,8 @@ from langchain.embeddings import HuggingFaceEmbeddings
 from agent.abstract_agent import AbstractAgent
 from agent.chatglm_classifier import Classifier
 from agent.audio import AudioModule
-from agent.chatgpt_tools import EventDetector
 from agent.utils import init_knowledge_vector_store
-from agent.llm import Gpt3_5LLM, ChatGLMLLM
+from agent.llm import Gpt3_5LLM, ChatGLMLLM, Gpt3_5freeLLM
 
 device = 'cuda'
 # device = 'cpu'
@@ -73,20 +72,19 @@ class MainAgent(AbstractAgent):
                  ai_name,
                  model_name='chatglm',
                  lock_memory=False,
-                 lock_event=False,
                  classifier_enabled=False,
                  max_history_size=1100,
                  context_chunk_size=20,
+                 temperature=0.01,
                  streaming=True,
                  memory_search_top_k=3,
                  speak_rate='快'):
         """
 
         :param world_name: 世界名称，不同世界对应不同人设。
-        :param model_name: 模型名称，可用：chatglm、gpt3_5。
+        :param model_name: 模型名称，可用：chatglm-6b-int4、gpt3_5。
         :param lock_memory: 锁定对话记忆，为False时每次对话都要读取记忆文件，速度较慢，但每次对话增加新的对话到记忆文件中；
                             为True仅第一次加载时读取记忆文件，速度较快，但不增加新的记忆。
-        :param lock_event: 锁定事件记忆，为False时会产生事件记录（如一个角色与另一个角色的互动），为True则不产生
         :param classifier_enabled: 话题、情绪分类器是否可用。
         :param max_history_size: 在内存里的最大对话历史窗口token大小。
         :param context_chunk_size: 上下文chunk数量，越大则能载入更多记忆内容。
@@ -100,7 +98,6 @@ class MainAgent(AbstractAgent):
         self.memory_search_top_k = memory_search_top_k
         self.context_chunk_size = context_chunk_size
         self.lock_memory = lock_memory
-        self.lock_event = lock_event
         if speak_rate == '快':
             rate = 200
         elif speak_rate == '中':
@@ -111,10 +108,10 @@ class MainAgent(AbstractAgent):
             rate = 150
 
         self.streaming = streaming
-        # embedding_model_path = 'text2vec/GanymedeNil_text2vec-large-chinese'
-        embedding_model_path = 'GanymedeNil/text2vec-large-chinese'
+        embedding_model_path = 'text2vec/GanymedeNil_text2vec-large-chinese'
+        # embedding_model_path = 'GanymedeNil/text2vec-large-chinese'
         self.index_path = 'agent/memory/' + self.world_name + '/index.txt'
-        embedding_device = 'cuda'
+        embedding_device = device
         # self.streaming = streaming
         self.embeddings = HuggingFaceEmbeddings(model_name=embedding_model_path,
                                                 model_kwargs={'device': embedding_device})
@@ -127,22 +124,22 @@ class MainAgent(AbstractAgent):
         if self.lock_memory:
             self.history_vs = VectorStore(self.embeddings, self.history_file, chunk_size=1,
                                           top_k=6)
-        if not self.lock_event:
-            # 事件识别器
-            self.event_det = EventDetector()
-        else:
-            self.event_vs = VectorStore(self.embeddings, self.event_file, chunk_size=1,
-                                        top_k=3)
+        self.event_vs = VectorStore(self.embeddings, self.event_file, chunk_size=1,
+                                    top_k=3)
         print("【---记忆模块加载完成---】")
         # ---model
         self.model_name = model_name
-        if self.model_name == 'chatglm':
-            self.path = 'chatglm-6b-int4'
-            self.llm = ChatGLMLLM(self.ai_name, lock_memory=self.lock_memory, world_name=self.world_name)
+        if self.model_name == 'chatglm-6b-int4':
+            self.path = 'THUDM/chatglm-6b-int4'
+            self.llm = ChatGLMLLM(self.ai_name, lock_memory=self.lock_memory, temperature=temperature,
+                                  world_name=self.world_name)
             self.llm.load_model(self.path)
         elif self.model_name == 'gpt3_5':
             self.llm = Gpt3_5LLM(ai_name=self.ai_name, world_name=self.world_name,
-                                 lock_memory=self.lock_memory, temperature=0.01)
+                                 lock_memory=self.lock_memory, temperature=temperature)
+        elif model_name == 'gpt3_5free':
+            self.llm = Gpt3_5freeLLM(ai_name=self.ai_name, world_name=self.world_name,
+                                     lock_memory=self.lock_memory, temperature=temperature)
         else:
             raise AttributeError("模型选择参数出错！传入的参数为", self.model_name)
         # 初始化提示语
@@ -179,15 +176,12 @@ class MainAgent(AbstractAgent):
                                              chunk_size=30,
                                              top_k=6),
                                  related_text_lst)
-        # 交互事件记忆
-        if self.lock_event:
-            get_related_text_lst(query, self.event_vs, related_text_lst)
-        else:
-            get_related_text_lst(query,
-                                 VectorStore(self.embeddings, self.event_file,
-                                             chunk_size=20,
-                                             top_k=3),
-                                 related_text_lst)
+        # 事件记忆
+        get_related_text_lst(query,
+                             VectorStore(self.embeddings, self.event_file,
+                                         chunk_size=20,
+                                         top_k=3),
+                             related_text_lst)
 
         context = collect_context(related_text_lst)
         response = self.llm.chat(query + '\n' + self.ai_name + '的回答:', context)
@@ -198,13 +192,4 @@ class MainAgent(AbstractAgent):
         else:
             print(self.ai_name, ":{}\n".format(response))
 
-        # if not self.lock_event:
-        #     # 检测回答是否涉及与其他人物的交互
-        #     name_plus_ans = self.ai_name + '说:' + response
-        #     is_event = self.event_det.do(name_plus_ans)
-        #     if is_event:
-        #         # 有交互，需要确定交互方，分别存到不同人物的事件记录文件中
-        #         # 回答者
-        #         append_to_file(self.event_file.replace("{{{AI_NAME}}}", self.ai_name), name_plus_ans)
-        #         # 搜索交互方
         # self.voice_module.say(response)

@@ -1,13 +1,11 @@
 import copy
+import openai
 from abc import abstractmethod
 
-import openai
+from gpt4free import usesless
 from transformers import AutoTokenizer, AutoModel
 
-from agent.chatgpt_tools import EventDetector
 from agent.utils import append_to_lst_file
-
-openai.api_key = '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'
 
 
 class BaseLLM:
@@ -30,8 +28,7 @@ class BaseLLM:
     def __init__(self, ai_name, lock_memory, world_name):
         self.ai_name = ai_name
         self.lock_memory = lock_memory
-        self.history_path = 'agent/memory/' + world_name + '/对话/' + self.ai_name + '/history.txt'
-        self.event_det = EventDetector()
+        self.history_path = 'agent/memory/' + world_name + '/local/' + self.ai_name + '/history.txt'
 
     @property
     def _llm_type(self) -> str:
@@ -54,22 +51,27 @@ class BaseLLM:
              context: str) -> str:
         # 将上下文加入到最开头的提示词中
         context = context.replace("{{{AI_NAME}}}", self.ai_name)
-        history_and_context = self.history[0][0].replace("{{{context}}}", context).replace("{{{AI_NAME}}}", self.ai_name)
+        history_and_context = self.history[0][0].replace("{{{context}}}", context).replace("{{{AI_NAME}}}",
+                                                                                           self.ai_name)
         first_ans = self.history[0][1].replace("{{{AI_NAME}}}", self.ai_name)
 
-        print("context len:", len(context))
-        print("history_and_context len:", len(history_and_context))
-        print("first_ans len:", len(first_ans))
+        # print("context len:", len(context))
+        # print("history_and_context len:", len(history_and_context))
+        # print("first_ans len:", len(first_ans))
 
         self.history[0] = (history_and_context, first_ans)
 
-        print(self.history[0][0])
+        # print(self.history[0][0])
 
         ans = self.get_response(query)
+        # res = openai.Moderation.create(
+        #     input=ans
+        # )
+        # print(res["results"][0])
         self.history.append((query, ans))
         self.total_token_size += (len(ans) + len(query))
 
-        print("Token size:", self.total_token_size + len(context))
+        # print("Token size:", self.total_token_size + len(context))
 
         # 窗口控制
         self.history_window_control(context)
@@ -86,14 +88,11 @@ class BaseLLM:
 
     def history_window_control(self, context):
         if self.total_token_size + len(context) >= self.max_history_size:
-            while self.total_token_size + len(context) > (self.max_history_size - 400):
+            while self.total_token_size + len(context) > (self.max_history_size - 300):
                 self.total_token_size -= (len(self.history[1][0]) + len(self.history[1][1]))
                 self.history.pop(1)
             print("窗口缩小， 历史对话：")
             print(self.history)
-
-    def _call(self, **kwargs):
-        pass
 
 
 class Gpt3_5LLM(BaseLLM):
@@ -129,13 +128,39 @@ class Gpt3_5LLM(BaseLLM):
         return response.choices[0].message.content
 
 
+class Gpt3_5freeLLM(BaseLLM):
+    model_name = 'gpt-3.5-turbo'
+    temperature = 0.1
+
+    def __init__(self, ai_name, world_name, lock_memory=False, temperature=0.1, max_token=1000):
+        super().__init__(ai_name, lock_memory, world_name)
+        self.temperature = temperature
+        self.max_token = max_token
+        self.message_id = ""
+        self.talk_times = 0
+
+    def send(self, prompt, sys_mes):
+        return usesless.Completion.create(prompt=prompt,
+                                          systemMessage=sys_mes,
+                                          parentMessageId=self.message_id,
+                                          temperature=self.temperature)
+
+    def get_response(self, query):
+        res = self.send(query, self.history[0][0])
+        self.talk_times += 1
+        print("talk_times:", self.talk_times)
+        self.message_id = res["id"]
+        return res['text']
+
+
 class ChatGLMLLM(BaseLLM):
     tokenizer: object = None
     model: object = None
     model_name = 'ChatGlm'
 
-    def __init__(self, ai_name, world_name, lock_memory=False):
+    def __init__(self, ai_name, world_name, temperature=0.1, lock_memory=False):
         super().__init__(ai_name, lock_memory, world_name)
+        self.temperature = temperature
 
     def get_response(self, query):
         ans, _ = self.model.chat(

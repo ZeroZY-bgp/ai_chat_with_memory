@@ -1,5 +1,0 @@
-{身份信息：agent/memory/A_02/身份/all.txt};
-{Alice历史对话：agent/memory/A_02/对话/Alice/history.txt};
-{Alice事件：agent/memory/A_02/对话/Alice/event.txt};
-{Lisa历史对话：agent/memory/A_02/对话/Lisa/history.txt};
-{Lisa事件：agent/memory/A_02/对话/Lisa/event.txt};

@@ -5,7 +5,6 @@ from typing import List
 
 from langchain import FAISS
 from langchain.document_loaders import UnstructuredFileLoader
-from langchain.schema import Document
 
 from agent.chinese_text_splitter import ChineseTextSplitter
 from langchain.text_splitter import CharacterTextSplitter, RecursiveCharacterTextSplitter
@@ -52,12 +51,32 @@ def read_txt_to_str(path):
         return f.read()
 
 
+def create_txt(path, init_str):
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(init_str)
+
+
+def create_txt_no_content(path):
+    with open(path, "w", encoding="utf-8") as f:
+        pass
+
+
+def create_folder(path):
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+
 def append_to_lst_file(path, element):
     text = read_txt_to_str(path)
     lst = eval(text)
     lst.append(element)
     with open(path, 'w', encoding='utf-8') as f:
         f.write(str(lst))
+
+
+def append_to_str_file(path, new_str):
+    with open(path, 'a', encoding="utf-8") as file:
+        file.write(new_str)
 
 
 def init_knowledge_vector_store(embeddings,
