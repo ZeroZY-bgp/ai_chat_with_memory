@@ -3,7 +3,6 @@ from langchain import FAISS
 from langchain.embeddings import HuggingFaceEmbeddings
 
 from agent.abstract_agent import AbstractAgent
-from agent.chatglm_classifier import Classifier
 from agent.audio import AudioModule
 from agent.utils import init_knowledge_vector_store
 from agent.llm import Gpt3_5LLM, ChatGLMLLM, Gpt3_5freeLLM
