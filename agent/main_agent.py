@@ -10,6 +10,9 @@ from agent.llm import Gpt3_5LLM, ChatGLMLLM, Gpt3_5freeLLM
 device = 'cuda'
 # device = 'cpu'
 
+# embed_model_path = 'text2vec/GanymedeNil_text2vec-large-chinese'
+embed_model_path = 'GanymedeNil/text2vec-large-chinese'
+
 
 def get_docs_with_score(docs_with_score):
     docs = []
@@ -107,8 +110,7 @@ class MainAgent(AbstractAgent):
             rate = 150
 
         self.streaming = streaming
-        embedding_model_path = 'text2vec/GanymedeNil_text2vec-large-chinese'
-        # embedding_model_path = 'GanymedeNil/text2vec-large-chinese'
+        embedding_model_path = embed_model_path
         self.index_path = 'agent/memory/' + self.world_name + '/index.txt'
         embedding_device = device
         # self.streaming = streaming
@@ -157,7 +159,7 @@ class MainAgent(AbstractAgent):
         # ---话题分类器
         self.classifier_enabled = classifier_enabled
         if self.classifier_enabled:
-            self.classifier = Classifier()
+            # self.classifier = Classifier()
             print("【---话题分类器加载完成---】")
 
     def chat(self, query):

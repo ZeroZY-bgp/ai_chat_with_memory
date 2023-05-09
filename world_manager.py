@@ -102,10 +102,6 @@ class Manager:
     def create_event(self, character_lst, model_name="gpt3_5"):
         eg = EventGenerator(self.world_name, character_lst, model_name=model_name)
         eg.do(character_lst)
-#
-# class character_info:
-#
-#     def __init__(self, world_name, ai_name):
 
 
 if __name__ == '__main__':
