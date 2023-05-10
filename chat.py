@@ -5,17 +5,17 @@ from agent.main_agent import MainAgent
 openai.api_key = ''
 
 
-WORLD_NAME = 'A_S'
+LOCK_MEMORY = True
 
-USER_NAME = '白广平'
+AI_NAME = '小明'
 
-AI_NAME = 'Alice'
+WORLD_NAME = 'A_03'
 
-LOCK_MEMORY = False
-
-TEMPERATURE = 0.6
+USER_NAME = 'user'
 
 HISTORY_WINDOW_SIZE = 1600
+
+TEMPERATURE = 0.6
 
 MODEL_NAME = 'gpt3_5free'
 
