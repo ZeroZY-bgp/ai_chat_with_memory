@@ -6,9 +6,8 @@ SENTENCE_SIZE = 100
 
 
 class ChineseTextSplitter(CharacterTextSplitter):
-    def __init__(self, pdf: bool = False, **kwargs):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.pdf = pdf
 
     def split_text(self, text: str, use_document_segmentation: bool = False) -> List[str]:
         text = re.sub(r'([;；.!?。！？\?])([^”’])', r"\1\n\2", text)  # 单字符断句符

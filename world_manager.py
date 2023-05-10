@@ -119,7 +119,7 @@ if __name__ == '__main__':
     # 身份信息
     identity_str = '[{{{AI_NAME}}}身份]：家里蹲大学计算机专业学生，喜欢编程和学习人工智能，也喜欢思考和学习。'
     # 创建角色，需要三个必要信息：ai名字，角色提示词，身份信息
-    manager.create_character(ai_name="小红", prompt_str=prompt_str, identity_str=IDENTITY_TEMPLATE)
+    manager.create_character(ai_name="小红", prompt_str=prompt_str, identity_str=identity_str)
 
     # 产生事件，只有足够的身份信息才能产生具体事件
     cha_lst = ['小明', '小红']

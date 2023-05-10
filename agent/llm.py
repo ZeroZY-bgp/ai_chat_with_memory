@@ -2,7 +2,7 @@ import copy
 import openai
 from abc import abstractmethod
 
-from gpt4free import usesless
+import agent.useless as ul
 from transformers import AutoTokenizer, AutoModel
 
 from agent.utils import append_to_lst_file
@@ -140,10 +140,10 @@ class Gpt3_5freeLLM(BaseLLM):
         self.talk_times = 0
 
     def send(self, prompt, sys_mes):
-        return usesless.Completion.create(prompt=prompt,
-                                          systemMessage=sys_mes,
-                                          parentMessageId=self.message_id,
-                                          temperature=self.temperature)
+        return ul.Completion.create(prompt=prompt,
+                                    systemMessage=sys_mes,
+                                    parentMessageId=self.message_id,
+                                    temperature=self.temperature)
 
     def get_response(self, query):
         res = self.send(query, self.history[0][0])

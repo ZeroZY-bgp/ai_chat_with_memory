@@ -5,11 +5,11 @@ from agent.main_agent import MainAgent
 openai.api_key = ''
 
 
-WORLD_NAME = 'A_03'
+WORLD_NAME = 'A_S'
 
-USER_NAME = '用户'
+USER_NAME = '白广平'
 
-AI_NAME = '小红'
+AI_NAME = 'Alice'
 
 LOCK_MEMORY = False
 

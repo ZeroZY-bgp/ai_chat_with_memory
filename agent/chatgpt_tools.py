@@ -1,7 +1,7 @@
 import re
 
 import openai
-from gpt4free import usesless
+import agent.useless as ul
 
 from agent.utils import read_txt_to_str, append_to_lst_file
 
@@ -40,10 +40,10 @@ class EventGenerator:
         )
 
     def send_free(self, prompt, sys_mes):
-        return usesless.Completion.create(prompt=prompt,
-                                          systemMessage=sys_mes,
-                                          parentMessageId="",
-                                          temperature=self.temperature)
+        return ul.Completion.create(prompt=prompt,
+                                    systemMessage=sys_mes,
+                                    parentMessageId="",
+                                    temperature=self.temperature)
 
     def do(self, character_lst):
         character_str = ",".join(character_lst)
