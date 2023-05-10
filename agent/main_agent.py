@@ -7,11 +7,9 @@ from agent.audio import AudioModule
 from agent.utils import init_knowledge_vector_store
 from agent.llm import Gpt3_5LLM, ChatGLMLLM, Gpt3_5freeLLM
 
-device = 'cuda'
-# device = 'cpu'
 
-# embed_model_path = 'text2vec/GanymedeNil_text2vec-large-chinese'
-embed_model_path = 'GanymedeNil/text2vec-large-chinese'
+embed_model_path = 'text2vec/GanymedeNil_text2vec-large-chinese'
+# embed_model_path = 'GanymedeNil/text2vec-large-chinese'
 
 
 def get_docs_with_score(docs_with_score):
@@ -80,6 +78,7 @@ class MainAgent(AbstractAgent):
                  temperature=0.01,
                  streaming=True,
                  memory_search_top_k=3,
+                 embedding_model_device='cpu',
                  speak_rate='快'):
         """
 
@@ -92,7 +91,8 @@ class MainAgent(AbstractAgent):
         :param context_chunk_size: 上下文chunk数量，越大则能载入更多记忆内容。
         :param streaming: 流式输出。
         :param memory_search_top_k: 记忆和提问的相关性最高前k个提取到提问上下文中。
-        :param speak_rate: 讲话速度。
+        :param embedding_model_device: embedding模型的device（可选参数为 'cpu'、'cuda'）。
+        :param speak_rate: 阅读回答的速度。
         """
         super().__init__()
         self.world_name = world_name
@@ -112,7 +112,7 @@ class MainAgent(AbstractAgent):
         self.streaming = streaming
         embedding_model_path = embed_model_path
         self.index_path = 'agent/memory/' + self.world_name + '/index.txt'
-        embedding_device = device
+        embedding_device = embedding_model_device
         # self.streaming = streaming
         self.embeddings = HuggingFaceEmbeddings(model_name=embedding_model_path,
                                                 model_kwargs={'device': embedding_device})
