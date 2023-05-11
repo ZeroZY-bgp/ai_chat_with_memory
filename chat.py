@@ -9,7 +9,7 @@ LOCK_MEMORY = True
 
 AI_NAME = '小明'
 
-WORLD_NAME = 'A_03'
+WORLD_NAME = 'A_01'
 
 USER_NAME = 'user'
 
@@ -23,6 +23,7 @@ MODEL_NAME = 'gpt3_5free'
 def chat_with_ai():
     agent = MainAgent(world_name=WORLD_NAME,
                       ai_name=AI_NAME,
+                      user_name=USER_NAME,
                       model_name=MODEL_NAME,
                       lock_memory=LOCK_MEMORY,
                       temperature=TEMPERATURE,

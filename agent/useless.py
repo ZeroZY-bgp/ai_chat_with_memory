@@ -1,17 +1,19 @@
 import requests
 import json
+from fake_useragent import UserAgent
 
 
 class Completion:
     headers = {
         "authority": "ai.usesless.com",
         "accept": "application/json, text/plain, */*",
-        "accept-language": "en-US,en;q=0.5",
+        "accept-language": "en-US,en,zh;q=0.5",
         "cache-control": "no-cache",
         "sec-fetch-dest": "empty",
         "sec-fetch-mode": "cors",
         "sec-fetch-site": "same-origin",
-        "user-agent": "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/112.0",
+        # "user-agent": "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/112.0",
+        'user-agent': UserAgent().random
     }
 
     @staticmethod

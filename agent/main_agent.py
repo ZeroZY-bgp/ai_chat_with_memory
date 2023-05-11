@@ -7,10 +7,9 @@ from agent.audio import AudioModule
 from agent.utils import init_knowledge_vector_store
 from agent.llm import Gpt3_5LLM, ChatGLMLLM, Gpt3_5freeLLM
 
-
 embed_model_path = 'text2vec/GanymedeNil_text2vec-large-chinese'
 # embed_model_path = 'GanymedeNil/text2vec-large-chinese'
-
+device = 'cpu'
 
 def get_docs_with_score(docs_with_score):
     docs = []
@@ -49,12 +48,18 @@ class VectorStore:
         self.top_k = top_k
         self.path = path
         self.vs_path, _ = init_knowledge_vector_store(embeddings=embeddings, filepath=self.path)
-        self.core = FAISS.load_local(self.vs_path, embeddings)
+        if self.vs_path is None:
+            self.core = None
+        else:
+            self.core = FAISS.load_local(self.vs_path, embeddings)
         # self.core.chunk_size = chunk_size
         # FAISS.similarity_search_with_score_by_vector = similarity_search_with_score_by_vector
 
     def similarity_search_with_score(self, query):
-        return self.core.similarity_search_with_score(query, self.top_k)
+        if self.core is not None:
+            return self.core.similarity_search_with_score(query, self.top_k)
+        else:
+            return []
 
     def get_path(self):
         return self.path
@@ -70,7 +75,8 @@ class MainAgent(AbstractAgent):
     def __init__(self,
                  world_name,
                  ai_name,
-                 model_name='chatglm',
+                 user_name='user',
+                 model_name='gpt3_5',
                  lock_memory=False,
                  classifier_enabled=False,
                  max_history_size=1100,
@@ -78,7 +84,7 @@ class MainAgent(AbstractAgent):
                  temperature=0.01,
                  streaming=True,
                  memory_search_top_k=3,
-                 embedding_model_device='cpu',
+                 embedding_model_device=device,
                  speak_rate='快'):
         """
 
@@ -97,6 +103,7 @@ class MainAgent(AbstractAgent):
         super().__init__()
         self.world_name = world_name
         self.ai_name = ai_name
+        self.user_name = user_name
         self.memory_search_top_k = memory_search_top_k
         self.context_chunk_size = context_chunk_size
         self.lock_memory = lock_memory
@@ -121,34 +128,35 @@ class MainAgent(AbstractAgent):
         self.event_file = 'agent/memory/' + self.world_name + '/local/' + self.ai_name + '/event.txt'
         self.file_lst = []
         self.identity_vs = VectorStore(self.embeddings, self.identity_file, chunk_size=1,
-                                       top_k=6)
+                                       top_k=2)
         if self.lock_memory:
             self.history_vs = VectorStore(self.embeddings, self.history_file, chunk_size=1,
-                                          top_k=6)
+                                          top_k=9)
         self.event_vs = VectorStore(self.embeddings, self.event_file, chunk_size=1,
-                                    top_k=3)
+                                    top_k=6)
         print("【---记忆模块加载完成---】")
         # ---model
         self.model_name = model_name
         if self.model_name == 'chatglm-6b-int4':
-            self.path = 'THUDM/chatglm-6b-int4'
-            self.llm = ChatGLMLLM(self.ai_name, lock_memory=self.lock_memory, temperature=temperature,
-                                  world_name=self.world_name)
+            # self.path = 'THUDM/chatglm-6b-int4'
+            self.path = 'chatglm-6b-int4'
+            self.llm = ChatGLMLLM(self.ai_name, user_name=self.user_name, world_name=self.world_name,
+                                  lock_memory=self.lock_memory, temperature=temperature)
             self.llm.load_model(self.path)
         elif self.model_name == 'gpt3_5':
-            self.llm = Gpt3_5LLM(ai_name=self.ai_name, world_name=self.world_name,
+            self.llm = Gpt3_5LLM(ai_name=self.ai_name, user_name=self.user_name, world_name=self.world_name,
                                  lock_memory=self.lock_memory, temperature=temperature)
         elif model_name == 'gpt3_5free':
-            self.llm = Gpt3_5freeLLM(ai_name=self.ai_name, world_name=self.world_name,
+            self.llm = Gpt3_5freeLLM(ai_name=self.ai_name, user_name=self.user_name, world_name=self.world_name,
                                      lock_memory=self.lock_memory, temperature=temperature)
         else:
             raise AttributeError("模型选择参数出错！传入的参数为", self.model_name)
         # 初始化提示语
         basic_prompt_path = 'agent/memory/' + self.world_name + '/prompts/' + self.ai_name + '.txt'
         basic_history = load_txt_to_lst(basic_prompt_path)
-        # print(self.ai_name, ":", basic_history[0][1])
+        # 加载短期对话历史
+        self.llm.load_history(basic_history)
         # 窗口控制
-        self.llm.load_basic_history(basic_history)
         self.llm.set_max_history_size(max_history_size)
         # ---
         print("【---对话模型加载完成---】")
@@ -174,23 +182,22 @@ class MainAgent(AbstractAgent):
         else:
             get_related_text_lst(query,
                                  VectorStore(self.embeddings, self.history_file,
-                                             chunk_size=30,
+                                             chunk_size=10,
                                              top_k=6),
                                  related_text_lst)
         # 事件记忆
         get_related_text_lst(query,
                              VectorStore(self.embeddings, self.event_file,
-                                         chunk_size=20,
+                                         chunk_size=10,
                                          top_k=3),
                              related_text_lst)
 
         context = collect_context(related_text_lst)
-        response = self.llm.chat(query + '\n' + self.ai_name + '的回答:', context)
+        response = self.llm.chat(self.user_name + "说：" + query + '\n' + self.ai_name + '说：', context)
 
         if self.classifier_enabled:
             topic_tag = self.classifier.do(response)
             print(self.ai_name, ":{}\n".format(response), "话题：", topic_tag)
         else:
             print(self.ai_name, ":{}\n".format(response))
-
         # self.voice_module.say(response)

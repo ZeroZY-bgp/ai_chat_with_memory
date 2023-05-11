@@ -55,6 +55,8 @@ class Manager:
             create_txt_no_content(self.basic_global_file)
             # 历史对话记录
             create_folder(self.local_folder)
+            self.world_is_created = True
+            print("世界已创建")
             # 创建模板
             if template:
                 ai_name = '小明'
@@ -67,8 +69,7 @@ class Manager:
                 # 身份模板
                 identity_template = '[小明身份]：家里蹲大学计算机专业学生，喜欢编程和学习人工智能，也喜欢思考和学习。'
                 self.create_character(ai_name, prompt_str, identity_template)
-                print("模板已创建")
-            print("世界已创建")
+                print("模板人物已创建")
 
     def create_character(self, ai_name, prompt_str=PROMPT_TEMPLATE, identity_str=IDENTITY_TEMPLATE):
         if not self.world_is_created:
@@ -90,10 +91,10 @@ class Manager:
         create_folder(personal_folder)
         # 事件文件
         event_file_str = personal_folder + "/event.txt"
-        create_txt(event_file_str, '[]')
+        create_txt_no_content(event_file_str)
         # 历史对话文件
         history_file_str = personal_folder + "/history.txt"
-        create_txt(history_file_str, '[]')
+        create_txt_no_content(history_file_str)
         # 身份信息
         identity_str = identity_str.replace("{{{AI_NAME}}}", ai_name)
         append_to_str_file(self.basic_global_file, identity_str + '\n')
@@ -106,7 +107,7 @@ class Manager:
 
 if __name__ == '__main__':
     # 初始化世界管理器
-    manager = Manager(world_name="A_03")
+    manager = Manager(world_name="A_01")
     # 创建一个世界，如果已存在则不会创建，template为True则生成模板人物
     manager.create_world(template=True)
     # 以下提示词中出现的“{{{}}}”的内容在实际对话中会被替换为具体内容，用户不需要更改
@@ -117,10 +118,9 @@ if __name__ == '__main__':
                    '作为一个计算机专业学生{{{AI_NAME}}}，'
                    '我喜欢人工智能，也喜欢思考和学习。')]
     # 身份信息
-    identity_str = '[{{{AI_NAME}}}身份]：家里蹲大学计算机专业学生，喜欢编程和学习人工智能，也喜欢思考和学习。'
+    identity_str = '[{{{AI_NAME}}}身份]：家外蹲大学计算机专业学生，喜欢编程和学习人工智能，也喜欢思考和学习。'
     # 创建角色，需要三个必要信息：ai名字，角色提示词，身份信息
     manager.create_character(ai_name="小红", prompt_str=prompt_str, identity_str=identity_str)
-
     # 产生事件，只有足够的身份信息才能产生具体事件
     cha_lst = ['小明', '小红']
     manager.create_event(cha_lst, model_name='gpt3_5free')

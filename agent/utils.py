@@ -127,7 +127,6 @@ def init_knowledge_vector_store(embeddings,
         vector_store.save_local(vs_path)
         return vs_path, loaded_files
     else:
-        print("文件均未成功加载")
         return None, loaded_files
 
 

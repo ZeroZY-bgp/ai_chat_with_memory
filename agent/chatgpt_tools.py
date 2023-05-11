@@ -3,7 +3,7 @@ import re
 import openai
 import agent.useless as ul
 
-from agent.utils import read_txt_to_str, append_to_lst_file
+from agent.utils import read_txt_to_str, append_to_str_file
 
 
 class EventGenerator:
@@ -82,7 +82,7 @@ class EventGenerator:
 
     def save_event(self, character, event_str):
         path = self.event_file.replace("{{{AI_NAME}}}", character)
-        append_to_lst_file(path, event_str)
+        append_to_str_file(path, event_str)
 
     def event_to_dict(self, s):
         # 使用正则表达式来匹配键值对
