@@ -92,12 +92,12 @@ class BaseLLM:
 
         ans = self.get_response(query)
 
-        if DEBUG_MODE and self.model_name == 'gpt-3.5-turbo':
-            # 检测回答是否违反openai使用规则
-            res = openai.Moderation.create(
-                input=ans
-            )
-            print("flag:", res["results"][0])
+        # if DEBUG_MODE and self.model_name == 'gpt-3.5-turbo':
+        #     # 检测回答是否违反openai使用规则
+        #     res = openai.Moderation.create(
+        #         input=ans
+        #     )
+        #     print("flag:", res["results"][0])
 
         self.history.append((query, ans))
         self.total_token_size += (len(ans) + len(query))
