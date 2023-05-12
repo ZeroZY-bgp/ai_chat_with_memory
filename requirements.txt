@@ -9,3 +9,4 @@ transformers==4.27.1
 sentence_transformers
 unstructured[local-inference]
 faiss-cpu
+nltk

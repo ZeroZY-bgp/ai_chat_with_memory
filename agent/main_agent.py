@@ -7,9 +7,11 @@ from agent.audio import AudioModule
 from agent.utils import init_knowledge_vector_store
 from agent.llm import Gpt3_5LLM, ChatGLMLLM, Gpt3_5freeLLM
 
-embed_model_path = 'text2vec/GanymedeNil_text2vec-large-chinese'
+# embed_model_path = 'text2vec/GanymedeNil_text2vec-large-chinese'
+embed_model_path = 'text2vec/shibing624_text2vec_base_chinese'
 # embed_model_path = 'GanymedeNil/text2vec-large-chinese'
-device = 'cpu'
+device = 'cuda'
+
 
 def get_docs_with_score(docs_with_score):
     docs = []
@@ -126,14 +128,14 @@ class MainAgent(AbstractAgent):
         self.history_file = 'agent/memory/' + self.world_name + '/local/' + self.ai_name + '/history.txt'
         self.identity_file = 'agent/memory/' + self.world_name + '/global/all.txt'
         self.event_file = 'agent/memory/' + self.world_name + '/local/' + self.ai_name + '/event.txt'
-        self.file_lst = []
+
         self.identity_vs = VectorStore(self.embeddings, self.identity_file, chunk_size=1,
                                        top_k=2)
         if self.lock_memory:
             self.history_vs = VectorStore(self.embeddings, self.history_file, chunk_size=1,
-                                          top_k=9)
+                                          top_k=6)
         self.event_vs = VectorStore(self.embeddings, self.event_file, chunk_size=1,
-                                    top_k=6)
+                                    top_k=2)
         print("【---记忆模块加载完成---】")
         # ---model
         self.model_name = model_name
@@ -165,10 +167,10 @@ class MainAgent(AbstractAgent):
         print("【---声音模块加载完成---】")
         # ---
         # ---话题分类器
-        self.classifier_enabled = classifier_enabled
-        if self.classifier_enabled:
-            # self.classifier = Classifier()
-            print("【---话题分类器加载完成---】")
+        # self.classifier_enabled = classifier_enabled
+        # if self.classifier_enabled:
+        #     # self.classifier = Classifier()
+        #     print("【---话题分类器加载完成---】")
 
     def chat(self, query):
         # 相似文本列表
@@ -183,21 +185,18 @@ class MainAgent(AbstractAgent):
             get_related_text_lst(query,
                                  VectorStore(self.embeddings, self.history_file,
                                              chunk_size=10,
-                                             top_k=6),
+                                             top_k=5),
                                  related_text_lst)
         # 事件记忆
-        get_related_text_lst(query,
-                             VectorStore(self.embeddings, self.event_file,
-                                         chunk_size=10,
-                                         top_k=3),
-                             related_text_lst)
+        get_related_text_lst(query, self.event_vs, related_text_lst)
 
         context = collect_context(related_text_lst)
-        response = self.llm.chat(self.user_name + "说：" + query + '\n' + self.ai_name + '说：', context)
+        ans = self.llm.chat(self.user_name + "说：" + query + '\n' + self.ai_name + '说：', context)
 
-        if self.classifier_enabled:
-            topic_tag = self.classifier.do(response)
-            print(self.ai_name, ":{}\n".format(response), "话题：", topic_tag)
-        else:
-            print(self.ai_name, ":{}\n".format(response))
-        # self.voice_module.say(response)
+        # if self.classifier_enabled:
+        #     topic_tag = self.classifier.do(ans)
+        #     print(self.ai_name, ":{}\n".format(ans), "话题：", topic_tag)
+        # else:
+        print(self.ai_name, ":{}\n".format(ans))
+        # self.voice_module.say(ans)
+        return ans

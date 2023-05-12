@@ -9,6 +9,8 @@ from transformers import AutoTokenizer, AutoModel
 
 from agent.utils import append_to_str_file, create_txt, read_txt_to_str
 
+DEBUG_MODE = True
+
 
 class BaseLLM:
     max_token: int = 10000
@@ -62,7 +64,8 @@ class BaseLLM:
             # 计算token_size
             for dialog in self.history:
                 self.total_token_size += (len(dialog[0]) + len(dialog[1]))
-            # print(self.total_token_size)
+            if DEBUG_MODE:
+                print("窗口文件Token size大小:", self.total_token_size)
 
     def set_max_history_size(self, max_history_size):
         self.max_history_size = max_history_size
@@ -77,35 +80,41 @@ class BaseLLM:
             replace("{{{USER_NAME}}}", self.user_name)
         first_ans = self.history[0][1].replace("{{{AI_NAME}}}", self.ai_name)
 
-        # print("context len:", len(context))
-        # print("history_and_context len:", len(history_and_context))
-        # print("first_ans len:", len(first_ans))
+        if DEBUG_MODE:
+            print("context长度:", len(context))
+            print("提示词总长度:", len(history_and_context))
 
         self.history[0] = (history_and_context, first_ans)
 
-        print("记忆检索片段：")
-        print(self.history[0][0])
+        if DEBUG_MODE:
+            print("记忆检索片段：")
+            print(context)
 
         ans = self.get_response(query)
-        # res = openai.Moderation.create(
-        #     input=ans
-        # )
-        # print(res["results"][0])
+
+        if DEBUG_MODE and self.model_name == 'gpt-3.5-turbo':
+            # 检测回答是否违反openai使用规则
+            res = openai.Moderation.create(
+                input=ans
+            )
+            print("flag:", res["results"][0])
+
         self.history.append((query, ans))
         self.total_token_size += (len(ans) + len(query))
 
         print("Token size:", self.total_token_size + len(context))
 
-        # 窗口控制
-        self.history_window_control(context)
         # 恢复最开头的提示词
         self.history[0] = self.basic_history[0]
         # 记录临时历史窗口
         create_txt(self.tmp_history_path, str(self.history))
+
         if not self.lock_memory:
             # 保存历史到文件中
             append_str = self.history[-1][0].replace('\n', ' ') + self.history[-1][1] + '\n'
             append_to_str_file(self.history_path, append_str)
+        # 窗口控制
+        self.history_window_control(context)
         return ans
 
     @abstractmethod
@@ -115,10 +124,15 @@ class BaseLLM:
     def history_window_control(self, context):
         if self.total_token_size + len(context) >= self.max_history_size:
             while self.total_token_size + len(context) > (self.max_history_size - self.window_decrease_size):
-                self.total_token_size -= (len(self.history[1][0]) + len(self.history[1][1]))
-                self.history.pop(1)
-            print("窗口缩小， 历史对话：")
-            print(self.history)
+                try:
+                    self.total_token_size -= (len(self.history[1][0]) + len(self.history[1][1]))
+                    self.history.pop(1)
+                except IndexError:
+                    # print("窗口不能再缩小了")
+                    break
+            if DEBUG_MODE:
+                print("窗口缩小， 历史对话：")
+                print(self.history)
 
 
 class Gpt3_5LLM(BaseLLM):

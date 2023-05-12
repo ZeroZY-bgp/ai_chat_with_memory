@@ -31,6 +31,9 @@ class Manager:
         self.local_folder = "agent/memory/" + self.world_name + "/local"
 
     def create_event(self, character_lst):
+        """
+        :param character_lst: 欲创建事件的角色列表
+        """
         if not self.world_is_created:
             print("世界", self.world_name, "未创建，请先调用'create_world(template=False)'函数创建该世界")
             return
@@ -38,6 +41,9 @@ class Manager:
         eg.do(character_lst)
 
     def create_world(self, template=False):
+        """
+        :param template: 是否使用模板，为True则会生成模板人物
+        """
         if self.world_is_created:
             print("该世界已存在，请检查世界名称或文件夹")
         else:
@@ -71,16 +77,24 @@ class Manager:
                 self.create_character(ai_name, prompt_str, identity_template)
                 print("模板人物已创建")
 
+    def character_is_created(self, ai_name):
+        cha_lst_str = read_txt_to_str(self.character_list_file)
+        cha_lst = cha_lst_str.split("\n")
+        return ai_name in cha_lst
+
     def create_character(self, ai_name, prompt_str=PROMPT_TEMPLATE, identity_str=IDENTITY_TEMPLATE):
+        """
+        :param ai_name: 角色名称
+        :param prompt_str: 提示词
+        :param identity_str: 身份信息
+        """
         if not self.world_is_created:
             print("世界", self.world_name, "未创建，请先调用'create_world(template=False)'函数创建该世界")
-            return
+            return False
         # 检查人物是否存在
-        cha_str = read_txt_to_str(self.character_list_file)
-        cha_lst = cha_str.split("\n")
-        if ai_name in cha_lst:
+        if self.character_is_created(ai_name):
             print("\"" + ai_name + "\"" + "已存在")
-            return
+            return False
         # 添加人物名称到人物列表
         append_to_str_file(self.character_list_file, ai_name + '\n')
         # 提示词
@@ -99,10 +113,21 @@ class Manager:
         identity_str = identity_str.replace("{{{AI_NAME}}}", ai_name)
         append_to_str_file(self.basic_global_file, identity_str + '\n')
         print("角色", "\"" + ai_name + "\"", "已创建")
+        return True
 
     def create_event(self, character_lst, model_name="gpt3_5"):
         eg = EventGenerator(self.world_name, character_lst, model_name=model_name)
         eg.do(character_lst)
+
+
+class CharacterInfo:
+    def __init__(self, world_name, ai_name):
+        self.world_name = world_name
+        self.ai_name = ai_name
+        self.prompt_path = 'agent/memory/' + self.world_name + '/' + self.ai_name + '/prompt.txt'
+        self.history_path = 'agent/memory/' + self.world_name + '/' + self.ai_name + '/history.txt'
+        self.identity_path = 'agent/memory/' + self.world_name + '/global.txt'
+        self.event_path = 'agent/memory/' + self.world_name + '/' + self.ai_name + '/event.txt'
 
 
 if __name__ == '__main__':

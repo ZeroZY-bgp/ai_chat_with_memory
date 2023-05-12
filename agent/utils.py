@@ -85,7 +85,7 @@ def init_knowledge_vector_store(embeddings,
     loaded_files = []
     if isinstance(filepath, str):
         if not os.path.exists(filepath):
-            print("路径不存在")
+            print(filepath, "路径不存在")
             return None
         elif os.path.isfile(filepath):
             file = os.path.split(filepath)[-1]
