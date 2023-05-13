@@ -111,13 +111,16 @@ class MainAgent(AbstractAgent):
         self.embeddings = HuggingFaceEmbeddings(model_name=embedding_model_path,
                                                 model_kwargs={'device': embedding_device})
 
+        self.identity_top_k = 3
+        self.history_top_k = 6
+        self.event_top_k = 2
         self.identity_vs = VectorStore(self.embeddings, self.info.identity_path, chunk_size=1,
-                                       top_k=3)
+                                       top_k=self.identity_top_k)
         if self.lock_memory:
             self.history_vs = VectorStore(self.embeddings, self.info.history_path, chunk_size=1,
-                                          top_k=3)
+                                          top_k=self.history_top_k)
         self.event_vs = VectorStore(self.embeddings, self.info.event_path, chunk_size=1,
-                                    top_k=2)
+                                    top_k=self.event_top_k)
         print("【---记忆模块加载完成---】")
         # ---model
         self.model_name = model_name
@@ -166,7 +169,7 @@ class MainAgent(AbstractAgent):
             get_related_text_lst(query,
                                  VectorStore(self.embeddings, self.info.history_path,
                                              chunk_size=10,
-                                             top_k=3),
+                                             top_k=self.history_top_k),
                                  related_text_lst)
         # 事件记忆
         get_related_text_lst(query, self.event_vs, related_text_lst)
