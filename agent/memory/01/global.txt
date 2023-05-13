@@ -1,0 +1,1 @@
+{'小明的认知': 'agent/memory/01/小明/identity小明.txt'}
