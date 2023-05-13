@@ -7,7 +7,7 @@ from abc import abstractmethod
 import agent.useless as ul
 from transformers import AutoTokenizer, AutoModel
 
-from agent.utils import append_to_str_file, create_txt, read_txt_to_str
+from agent.utils import append_to_str_file, create_txt, load_txt_to_str
 
 DEBUG_MODE = True
 
@@ -26,24 +26,18 @@ class BaseLLM:
     model_name = ""
     ai_name = ""
     user_name = ""
-    history_path = ''
     lock_memory = False
-    # 事件识别器
-    event_det = None
 
-    def __init__(self, ai_name, user_name, lock_memory, world_name):
-        self.ai_name = ai_name
+    def __init__(self, info, user_name, lock_memory):
+        self.info = info
+        self.ai_name = self.info.ai_name
         self.user_name = user_name
         self.lock_memory = lock_memory
-        self.history_path = 'agent/memory/' + world_name + '/local/' + self.ai_name + '/history.txt'
-        self.tmp_history_path = 'agent/memory/' + world_name + '/local/' + self.ai_name + '/temp_history.txt'
+        self.tmp_history_path = self.info.folder_path + '/temp_history' + self.ai_name + '.txt'
 
     @property
     def _llm_type(self) -> str:
         return self.model_name
-
-    def set_history_path(self, path):
-        self.history_path = path
 
     def load_history(self, basic_history):
         self.basic_history = basic_history
@@ -57,7 +51,7 @@ class BaseLLM:
         else:
             # 对话历史存在
             try:
-                self.history = eval(read_txt_to_str(self.tmp_history_path))
+                self.history = eval(load_txt_to_str(self.tmp_history_path))
             except SyntaxError as e:
                 print("临时对话历史内容结构出错(非python列表)，请检查", self.tmp_history_path, "文件。")
                 raise
@@ -112,7 +106,7 @@ class BaseLLM:
         if not self.lock_memory:
             # 保存历史到文件中
             append_str = self.history[-1][0].replace('\n', ' ') + self.history[-1][1] + '\n'
-            append_to_str_file(self.history_path, append_str)
+            append_to_str_file(self.info.history_path, append_str)
         # 窗口控制
         self.history_window_control(context)
         return ans
@@ -140,14 +134,13 @@ class Gpt3_5LLM(BaseLLM):
     temperature = 0.1
 
     def __init__(self,
-                 ai_name,
+                 info,
                  user_name,
-                 world_name,
                  lock_memory=False,
                  temperature=0.1,
                  max_token=1000,
                  window_decrease_size=300):
-        super().__init__(ai_name, user_name, lock_memory, world_name)
+        super().__init__(info, user_name, lock_memory)
         self.temperature = temperature
         self.max_token = max_token
         self.window_decrease_size = window_decrease_size
@@ -181,14 +174,13 @@ class Gpt3_5freeLLM(BaseLLM):
     temperature = 0.1
 
     def __init__(self,
-                 ai_name,
+                 info,
                  user_name,
-                 world_name,
                  lock_memory=False,
                  temperature=0.1,
                  max_token=1000,
                  window_decrease_size=200):
-        super().__init__(ai_name, user_name, lock_memory, world_name)
+        super().__init__(info, user_name, lock_memory)
         self.temperature = temperature
         self.max_token = max_token
         self.message_id = ""
@@ -214,8 +206,8 @@ class ChatGLMLLM(BaseLLM):
     model: object = None
     model_name = 'ChatGlm'
 
-    def __init__(self, ai_name, user_name, world_name, temperature=0.1, lock_memory=False):
-        super().__init__(ai_name, user_name, lock_memory, world_name)
+    def __init__(self, info, user_name, temperature=0.1, lock_memory=False):
+        super().__init__(info, user_name, lock_memory)
         self.temperature = temperature
 
     def get_response(self, query):

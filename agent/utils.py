@@ -12,6 +12,17 @@ from langchain.text_splitter import CharacterTextSplitter, RecursiveCharacterTex
 VS_ROOT_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "vector_store", "")
 
 
+class CharacterInfo:
+    def __init__(self, world_name, ai_name):
+        self.world_name = world_name
+        self.ai_name = ai_name
+        self.folder_path = 'agent/memory/' + self.world_name + '/' + self.ai_name
+        self.prompt_path = self.folder_path + '/prompt' + self.ai_name + '.txt'
+        self.history_path = self.folder_path + '/history' + self.ai_name + '.txt'
+        self.identity_path = self.folder_path + '/identity' + self.ai_name + '.txt'
+        self.event_path = self.folder_path + '/event' + self.ai_name + '.txt'
+
+
 def get_tag(string):
     topic_tag = ''
     emotion_tag = ''
@@ -36,8 +47,8 @@ def get_tag(string):
 
 def load_file(filepath):
     loader = UnstructuredFileLoader(filepath, mode="elements")
-    textsplitter = ChineseTextSplitter()
-    # textsplitter = CharacterTextSplitter(separator="。")
+    # textsplitter = ChineseTextSplitter()
+    textsplitter = CharacterTextSplitter(separator="\n")
     # textsplitter = RecursiveCharacterTextSplitter(separators=["\n\n", "\n", ",", "(", ")"],
     #                                               chunk_size=100,
     #                                               chunk_overlap=5,
@@ -46,9 +57,15 @@ def load_file(filepath):
     return docs
 
 
-def read_txt_to_str(path):
+def load_txt_to_str(path):
     with open(path, 'r', encoding='utf-8') as f:
         return f.read()
+
+
+def load_txt_to_lst(path):
+    with open(path, 'r', encoding='utf-8') as f:
+        text = f.read()
+    return eval(text)
 
 
 def create_txt(path, init_str):
@@ -67,11 +84,19 @@ def create_folder(path):
 
 
 def append_to_lst_file(path, element):
-    text = read_txt_to_str(path)
+    text = load_txt_to_str(path)
     lst = eval(text)
     lst.append(element)
     with open(path, 'w', encoding='utf-8') as f:
         f.write(str(lst))
+
+
+def append_to_dict_file(path, key, value):
+    text = load_txt_to_str(path)
+    d = eval(text)
+    d[key] = value
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write(str(d))
 
 
 def append_to_str_file(path, new_str):
@@ -116,16 +141,16 @@ def init_knowledge_vector_store(embeddings,
                 print(e)
                 print(f"{file} 未能成功加载")
     if len(docs) > 0:
-        if vs_path and os.path.isdir(vs_path):
-            vector_store = FAISS.load_local(vs_path, embeddings)
-            vector_store.add_documents(docs)
-        else:
-            if not vs_path:
-                vs_path = f"""{VS_ROOT_PATH}{os.path.splitext(file)[0]}_FAISS_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}"""
-            vector_store = FAISS.from_documents(docs, embeddings)
+        # if vs_path and os.path.isdir(vs_path):
+        #     vector_store = FAISS.load_local(vs_path, embeddings)
+        #     vector_store.add_documents(docs)
+        # else:
+        #     if not vs_path:
+        #         vs_path = f"""{VS_ROOT_PATH}{os.path.splitext(file)[0]}_FAISS_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}"""
+        vector_store = FAISS.from_documents(docs, embeddings)
 
-        vector_store.save_local(vs_path)
-        return vs_path, loaded_files
+        # vector_store.save_local(vs_path)
+        return vector_store, loaded_files
     else:
         return None, loaded_files
 

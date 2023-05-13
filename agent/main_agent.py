@@ -4,13 +4,14 @@ from langchain.embeddings import HuggingFaceEmbeddings
 
 from agent.abstract_agent import AbstractAgent
 from agent.audio import AudioModule
-from agent.utils import init_knowledge_vector_store
+from agent.utils import init_knowledge_vector_store, load_txt_to_lst, CharacterInfo
 from agent.llm import Gpt3_5LLM, ChatGLMLLM, Gpt3_5freeLLM
+from world_manager import CharacterInfo
 
 # embed_model_path = 'text2vec/GanymedeNil_text2vec-large-chinese'
 embed_model_path = 'text2vec/shibing624_text2vec_base_chinese'
 # embed_model_path = 'GanymedeNil/text2vec-large-chinese'
-device = 'cpu'
+device = 'cuda'
 
 
 def get_docs_with_score(docs_with_score):
@@ -32,28 +33,12 @@ def generate_prompt(context: str,
     return prompt
 
 
-def get_txt_addr(text, world_name):
-    pattern = r'agent/memory/' + world_name + '/[^/]+/[^/]+\.txt'  # 匹配任意倒数第二级目录名称
-    file_list = re.findall(pattern, text)
-    return file_list
-
-
-def load_txt_to_lst(path):
-    with open(path, 'r', encoding='utf-8') as f:
-        text = f.read()
-    return eval(text)
-
-
 class VectorStore:
 
     def __init__(self, embeddings, path, chunk_size=20, top_k=6):
         self.top_k = top_k
         self.path = path
-        self.vs_path, _ = init_knowledge_vector_store(embeddings=embeddings, filepath=self.path)
-        if self.vs_path is None:
-            self.core = None
-        else:
-            self.core = FAISS.load_local(self.vs_path, embeddings)
+        self.core, _ = init_knowledge_vector_store(embeddings=embeddings, filepath=self.path)
         # self.core.chunk_size = chunk_size
         # FAISS.similarity_search_with_score_by_vector = similarity_search_with_score_by_vector
 
@@ -105,6 +90,7 @@ class MainAgent(AbstractAgent):
         super().__init__()
         self.world_name = world_name
         self.ai_name = ai_name
+        self.info = CharacterInfo(self.world_name, self.ai_name)
         self.user_name = user_name
         self.memory_search_top_k = memory_search_top_k
         self.context_chunk_size = context_chunk_size
@@ -120,21 +106,17 @@ class MainAgent(AbstractAgent):
 
         self.streaming = streaming
         embedding_model_path = embed_model_path
-        self.index_path = 'agent/memory/' + self.world_name + '/index.txt'
         embedding_device = embedding_model_device
         # self.streaming = streaming
         self.embeddings = HuggingFaceEmbeddings(model_name=embedding_model_path,
                                                 model_kwargs={'device': embedding_device})
-        self.history_file = 'agent/memory/' + self.world_name + '/local/' + self.ai_name + '/history.txt'
-        self.identity_file = 'agent/memory/' + self.world_name + '/global/all.txt'
-        self.event_file = 'agent/memory/' + self.world_name + '/local/' + self.ai_name + '/event.txt'
 
-        self.identity_vs = VectorStore(self.embeddings, self.identity_file, chunk_size=1,
-                                       top_k=2)
+        self.identity_vs = VectorStore(self.embeddings, self.info.identity_path, chunk_size=1,
+                                       top_k=3)
         if self.lock_memory:
-            self.history_vs = VectorStore(self.embeddings, self.history_file, chunk_size=1,
-                                          top_k=6)
-        self.event_vs = VectorStore(self.embeddings, self.event_file, chunk_size=1,
+            self.history_vs = VectorStore(self.embeddings, self.info.history_path, chunk_size=1,
+                                          top_k=3)
+        self.event_vs = VectorStore(self.embeddings, self.info.event_path, chunk_size=1,
                                     top_k=2)
         print("【---记忆模块加载完成---】")
         # ---model
@@ -142,20 +124,19 @@ class MainAgent(AbstractAgent):
         if self.model_name == 'chatglm-6b-int4':
             # self.path = 'THUDM/chatglm-6b-int4'
             self.path = 'chatglm-6b-int4'
-            self.llm = ChatGLMLLM(self.ai_name, user_name=self.user_name, world_name=self.world_name,
+            self.llm = ChatGLMLLM(self.info, user_name=self.user_name,
                                   lock_memory=self.lock_memory, temperature=temperature)
             self.llm.load_model(self.path)
         elif self.model_name == 'gpt3_5':
-            self.llm = Gpt3_5LLM(ai_name=self.ai_name, user_name=self.user_name, world_name=self.world_name,
+            self.llm = Gpt3_5LLM(self.info, user_name=self.user_name,
                                  lock_memory=self.lock_memory, temperature=temperature)
         elif model_name == 'gpt3_5free':
-            self.llm = Gpt3_5freeLLM(ai_name=self.ai_name, user_name=self.user_name, world_name=self.world_name,
+            self.llm = Gpt3_5freeLLM(self.info, user_name=self.user_name,
                                      lock_memory=self.lock_memory, temperature=temperature)
         else:
             raise AttributeError("模型选择参数出错！传入的参数为", self.model_name)
         # 初始化提示语
-        basic_prompt_path = 'agent/memory/' + self.world_name + '/prompts/' + self.ai_name + '.txt'
-        basic_history = load_txt_to_lst(basic_prompt_path)
+        basic_history = load_txt_to_lst(self.info.prompt_path)
         # 加载短期对话历史
         self.llm.load_history(basic_history)
         # 窗口控制
@@ -176,22 +157,26 @@ class MainAgent(AbstractAgent):
         # 相似文本列表
         related_text_lst = []
         # 直接加载记忆模块
-        # 身份，世界观记忆
+        # 角色自己的本地记忆
         get_related_text_lst(query, self.identity_vs, related_text_lst)
         # 对话记忆
         if self.lock_memory:
             get_related_text_lst(query, self.history_vs, related_text_lst)
         else:
             get_related_text_lst(query,
-                                 VectorStore(self.embeddings, self.history_file,
+                                 VectorStore(self.embeddings, self.info.history_path,
                                              chunk_size=10,
-                                             top_k=5),
+                                             top_k=3),
                                  related_text_lst)
         # 事件记忆
         get_related_text_lst(query, self.event_vs, related_text_lst)
 
         context = collect_context(related_text_lst)
-        ans = self.llm.chat(self.user_name + "说：" + query + '\n' + self.ai_name + '说：', context)
+
+        if self.user_name != '':
+            ans = self.llm.chat(self.user_name + "说：" + query + '\n' + self.ai_name + '说：', context)
+        else:
+            ans = self.llm.chat(query + '\n' + self.ai_name + '说：', context)
 
         # if self.classifier_enabled:
         #     topic_tag = self.classifier.do(ans)

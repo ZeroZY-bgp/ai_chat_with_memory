@@ -3,7 +3,7 @@ import re
 import openai
 import agent.useless as ul
 
-from agent.utils import read_txt_to_str, append_to_str_file
+from agent.utils import load_txt_to_str, append_to_str_file
 
 
 class EventGenerator:
@@ -26,9 +26,9 @@ class EventGenerator:
 
     def init_prompt(self):
         self.prompt = '"""'
-        self.prompt = read_txt_to_str(self.identity_file)
+        self.prompt = load_txt_to_str(self.identity_file)
         for c in self.character_lst:
-            self.prompt += ('\n' + c + '的事件：' + read_txt_to_str(self.event_file.replace("{{{AI_NAME}}}", c)))
+            self.prompt += ('\n' + c + '的事件：' + load_txt_to_str(self.event_file.replace("{{{AI_NAME}}}", c)))
         self.prompt += '"""\n'
         # print("len:", len(self.prompt))
 

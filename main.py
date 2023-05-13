@@ -1,10 +1,9 @@
 import openai
 import configparser
-import subprocess
-import sys
 import os
 
 from agent.main_agent import MainAgent
+from agent.utils import CharacterInfo
 from world_manager import Manager
 
 
@@ -55,31 +54,6 @@ def input_ai_name(mgr):
             print("角色" + name + "不存在，请检查agent/memory/" + world_name +
                   "文件夹内是否存在该角色，或创建该角色。")
     return name
-
-
-# def function1_chat():
-#     print("是否使用config.ini预设参数？y.使用预设参数;其他.手动设置(仅设置世界名称，ai名称和用户名称三项参数)")
-#     option1 = input()
-#     if option1 != 'y' and option1 != 'Y':
-#         world_name, manager = input_world_name()
-#         ai_name = input_ai_name(manager)
-#         print("输入用户名称：", end=' ')
-#         user_name = input()
-#     else:
-#         # 检查各项参数是否合法
-#         manager = Manager(world_name)
-#         if not manager.world_is_created:
-#             print(world_name, "世界未创建，请检查config.ini。")
-#             return
-#
-#     print("设置完毕")
-#     chat_with_ai(MainAgent(world_name=world_name,
-#                            ai_name=ai_name,
-#                            user_name=user_name,
-#                            model_name=model_name,
-#                            lock_memory=lock_memory,
-#                            temperature=temperature,
-#                            max_history_size=history_window_size))
 
 
 if __name__ == '__main__':
@@ -144,7 +118,8 @@ if __name__ == '__main__':
                                    '我喜欢人工智能，也喜欢思考和学习。')]
                     # 身份信息
                     identity_str = '[{{{AI_NAME}}}身份]：家外蹲大学计算机专业学生，喜欢编程和学习人工智能，也喜欢思考和学习。'
-                    if manager.create_character(ai_name, prompt_str, identity_str):
+                    info = CharacterInfo(world_name, ai_name)
+                    if manager.create_character(info, prompt_str, identity_str):
                         print("是否打开世界文件夹？y.打开 其他.不打开")
                         y = input()
                         if y == 'Y' or y == 'y':
