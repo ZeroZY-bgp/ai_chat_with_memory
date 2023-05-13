@@ -11,7 +11,7 @@ from world_manager import CharacterInfo
 # embed_model_path = 'text2vec/GanymedeNil_text2vec-large-chinese'
 embed_model_path = 'text2vec/shibing624_text2vec_base_chinese'
 # embed_model_path = 'GanymedeNil/text2vec-large-chinese'
-device = 'cuda'
+device = 'cpu'
 
 
 def get_docs_with_score(docs_with_score):
