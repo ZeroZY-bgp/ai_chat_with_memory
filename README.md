@@ -48,7 +48,7 @@ python chat.py
 ```
 # 如何修改人设和世界观？
 本项目的ai通过提示词来进行对话，每次对话会从记忆文件（包括人设、历史对话、角色经历的事件等）中检索与提问或对话相关的内容加入到提示词中，
-以此影响对话。接下来提供一个创建世界的示例，让我们来看看这是如何实现的。
+以此影响对话。接下来提供一个示例，让我们来看看记忆文件是如何影响人设的。
 ## 创建世界
 ```commandline
 python main.py
@@ -96,7 +96,7 @@ python main.py
 ## 与ai对话
 首先打开config.ini设置参数：<br>
 [API]<br>
-openai_api_key =（你的api key，使用GPT3.5）
+openai_api_key =（你的api key，使用GPT3.5）<br>
 [MEMORY]<br>
 lock_memory = False（为False则会存放新的对话记录；为True则不记录，只通过已有对话记录影响对话）<br>
 [AI]<br>
