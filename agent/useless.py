@@ -1,6 +1,6 @@
 import requests
 import json
-from fake_useragent import UserAgent
+# from fake_useragent import UserAgent
 
 
 class Completion:
@@ -12,8 +12,8 @@ class Completion:
         "sec-fetch-dest": "empty",
         "sec-fetch-mode": "cors",
         "sec-fetch-site": "same-origin",
-        # "user-agent": "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/112.0",
-        'user-agent': UserAgent().random
+        "user-agent": "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/112.0",
+        # 'user-agent': UserAgent().random
     }
 
     @staticmethod
