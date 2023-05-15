@@ -23,6 +23,7 @@ class CommandFlags:
         self.show_event = False
         self.retry = False
         self.help = False
+        self.exit = False
         self.user_name = ''
         self.ai_name = ''
 
@@ -93,6 +94,10 @@ class Pool:
             command_flags.help = True
             print(load_txt_to_str(path))
             return 'help'
+        elif command == command_list['exit']:
+            # 退出
+            command_flags.exit = True
+            return 'exit'
         elif command == command_list['show_temp_history']:
             # 展示临时窗口历史对话
             command_flags.show_temp_history = True
