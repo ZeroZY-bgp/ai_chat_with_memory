@@ -1,5 +1,6 @@
 import copy
 import os
+import re
 
 import openai
 from abc import abstractmethod
@@ -7,7 +8,7 @@ from abc import abstractmethod
 import agent.useless as ul
 from transformers import AutoTokenizer, AutoModel
 
-from agent.utils import append_to_str_file, create_txt, load_txt_to_str
+from agent.utils import append_to_str_file, create_txt, load_txt_to_str, load_last_n_lines
 
 DEBUG_MODE = True
 
@@ -28,12 +29,12 @@ class BaseLLM:
     user_name = ""
     lock_memory = False
 
-    def __init__(self, info, user_name, lock_memory):
+    def __init__(self, info, user_name, lock_memory, history_window):
         self.info = info
         self.ai_name = self.info.ai_name
         self.user_name = user_name
         self.lock_memory = lock_memory
-        self.tmp_history_path = self.info.folder_path + '/temp_history' + self.ai_name + '.txt'
+        self.history_window = history_window
 
     @property
     def _llm_type(self) -> str:
@@ -43,23 +44,18 @@ class BaseLLM:
         self.basic_history = basic_history
         self.basic_token_len = len(self.basic_history[0][0]) + len(self.basic_history[0][1])
         self.total_token_size = 0
-        # 先尝试加载之前的对话历史
-        if not os.path.exists(self.tmp_history_path):
-            # 对话历史不存在，则创建对话历史
+        if os.path.exists(self.info.history_path) and os.path.getsize(self.info.history_path) == 0:
+            # 历史记录为空
             self.history = copy.deepcopy(self.basic_history)
-            create_txt(self.tmp_history_path, str(self.history))
         else:
-            # 对话历史存在
-            try:
-                self.history = eval(load_txt_to_str(self.tmp_history_path))
-            except SyntaxError as e:
-                print("临时对话历史内容结构出错(非python列表)，请检查", self.tmp_history_path, "文件。")
-                raise
-            # 计算token_size
-            for dialog in self.history:
-                self.total_token_size += (len(dialog[0]) + len(dialog[1]))
-            if DEBUG_MODE:
-                print("窗口文件Token size大小:", self.total_token_size)
+            self.history = basic_history
+            # 加载历史记录最后几行
+            history_lst = load_last_n_lines(self.info.history_path, self.history_window)
+            pattern = r'(.+?) ' + self.info.ai_name + '说：(.+?)(?=$)'
+
+            for dialog in history_lst:
+                matches = re.findall(pattern, dialog)
+                self.history.append(matches[0])
 
     def set_max_history_size(self, max_history_size):
         self.max_history_size = max_history_size
@@ -71,7 +67,7 @@ class BaseLLM:
         context = context.replace("{{{AI_NAME}}}", self.ai_name)
         history_and_context = self.history[0][0].replace("{{{context}}}", context).replace("{{{AI_NAME}}}",
                                                                                            self.ai_name).\
-            replace("{{{USER_NAME}}}", self.user_name)
+            replace("{{{USER_NAME}}}", self.user_name if self.user_name != '' else '一个人')
         first_ans = self.history[0][1].replace("{{{AI_NAME}}}", self.ai_name)
 
         if DEBUG_MODE:
@@ -87,7 +83,7 @@ class BaseLLM:
         ans = self.get_response(query)
 
         # if DEBUG_MODE and self.model_name == 'gpt-3.5-turbo':
-        #     # 检测回答是否违反openai使用规则
+        #
         #     res = openai.Moderation.create(
         #         input=ans
         #     )
@@ -101,7 +97,7 @@ class BaseLLM:
         # 恢复最开头的提示词
         self.history[0] = self.basic_history[0]
         # 记录临时历史窗口
-        create_txt(self.tmp_history_path, str(self.history))
+        # create_txt(self.tmp_history_path, str(self.history))
 
         if not self.lock_memory:
             # 保存历史到文件中
@@ -137,10 +133,11 @@ class Gpt3_5LLM(BaseLLM):
                  info,
                  user_name,
                  lock_memory=False,
+                 history_window=6,
                  temperature=0.1,
                  max_token=1000,
                  window_decrease_size=300):
-        super().__init__(info, user_name, lock_memory)
+        super().__init__(info, user_name, lock_memory, history_window)
         self.temperature = temperature
         self.max_token = max_token
         self.window_decrease_size = window_decrease_size
@@ -177,10 +174,11 @@ class Gpt3_5freeLLM(BaseLLM):
                  info,
                  user_name,
                  lock_memory=False,
+                 history_window=6,
                  temperature=0.1,
                  max_token=1000,
                  window_decrease_size=200):
-        super().__init__(info, user_name, lock_memory)
+        super().__init__(info, user_name, lock_memory, history_window)
         self.temperature = temperature
         self.max_token = max_token
         self.message_id = ""
@@ -206,8 +204,8 @@ class ChatGLMLLM(BaseLLM):
     model: object = None
     model_name = 'ChatGlm'
 
-    def __init__(self, info, user_name, temperature=0.1, lock_memory=False):
-        super().__init__(info, user_name, lock_memory)
+    def __init__(self, info, user_name, temperature=0.1, lock_memory=False, history_window=6):
+        super().__init__(info, user_name, lock_memory, history_window)
         self.temperature = temperature
 
     def get_response(self, query):
