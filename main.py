@@ -12,6 +12,7 @@ config.read('config.ini', encoding='utf-8-sig')
 
 openai.api_key = config.get('API', 'openai_api_key')
 lock_memory = config.getboolean('MEMORY', 'lock_memory')
+history_window = config.getint('MEMORY', 'history_window')
 ai_name = config.get('AI', 'name')
 world_name = config.get('WORLD', 'name')
 user_name = config.get('USER', 'name')
@@ -83,6 +84,7 @@ if __name__ == '__main__':
                                    user_name=user_name,
                                    model_name=model_name,
                                    lock_memory=lock_memory,
+                                   history_window=history_window,
                                    temperature=temperature,
                                    max_history_size=history_window_size))
         elif option == '2':
