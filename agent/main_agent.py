@@ -4,9 +4,10 @@ from langchain.embeddings import HuggingFaceEmbeddings
 
 from agent.abstract_agent import AbstractAgent
 from agent.audio import AudioModule
-from agent.utils import init_knowledge_vector_store, load_txt_to_lst, CharacterInfo
+from agent.utils import init_knowledge_vector_store, load_txt_to_lst, CharacterInfo, delete_last_line
 from agent.llm import Gpt3_5LLM, ChatGLMLLM, Gpt3_5freeLLM
 from world_manager import CharacterInfo
+from command import Pool, command_flags
 
 # embed_model_path = 'text2vec/GanymedeNil_text2vec-large-chinese'
 embed_model_path = 'text2vec/shibing624_text2vec_base_chinese'
@@ -96,6 +97,7 @@ class MainAgent(AbstractAgent):
         self.memory_search_top_k = memory_search_top_k
         self.context_chunk_size = context_chunk_size
         self.lock_memory = lock_memory
+        self.query = ''  # 提问的临时存储，用于重试提问
         if speak_rate == '快':
             rate = 200
         elif speak_rate == '中':
@@ -126,8 +128,8 @@ class MainAgent(AbstractAgent):
         # ---model
         self.model_name = model_name
         if self.model_name == 'chatglm-6b-int4':
-            # self.path = 'THUDM/chatglm-6b-int4'
-            self.path = 'chatglm-6b-int4'
+            self.path = 'THUDM/chatglm-6b-int4'
+            # self.path = 'chatglm-6b-int4'
             self.llm = ChatGLMLLM(self.info,
                                   user_name=self.user_name,
                                   lock_memory=self.lock_memory,
@@ -149,9 +151,9 @@ class MainAgent(AbstractAgent):
         else:
             raise AttributeError("模型选择参数出错！传入的参数为", self.model_name)
         # 初始化提示语
-        basic_history = load_txt_to_lst(self.info.prompt_path)
+        self.basic_history = load_txt_to_lst(self.info.prompt_path)
         # 加载短期对话历史
-        self.llm.load_history(basic_history)
+        self.llm.load_history(self.basic_history)
         # 窗口控制
         self.llm.set_max_history_size(max_history_size)
         # ---
@@ -167,6 +169,30 @@ class MainAgent(AbstractAgent):
         #     print("【---话题分类器加载完成---】")
 
     def chat(self, query):
+        self.check_command()
+        var_dict = {'info': self.info}
+        Pool().execute(query, var_dict)
+        if command_flags.exit:
+            # 执行退出指令
+            return 'ai_chat_with_memory sys:exit'
+        # 若query是一个指令，则处理过后退出，不进行对话
+        if not command_flags.not_command and not command_flags.retry:
+            self.check_show_command()
+            return 'ai_chat_with_memory sys:执行了指令'
+
+        if command_flags.retry:
+            # 执行重试指令
+            if self.query == '':
+                print("当前没有提问，请输入提问。")
+                return 'ai_chat_with_memory sys:当前没有提问，无法重试提问。'
+            # 从临时存储中取出提问
+            query = self.query
+            if not self.lock_memory:
+                # 删除历史文件最后一行
+                delete_last_line(self.info.history_path)
+                # 重新加载临时历史对话
+                self.llm.load_history(self.basic_history)
+
         # 相似文本列表
         related_text_lst = []
         # 直接加载记忆模块
@@ -186,10 +212,7 @@ class MainAgent(AbstractAgent):
 
         context = collect_context(related_text_lst)
 
-        if self.user_name != '':
-            ans = self.llm.chat(self.user_name + "说：" + query + '\n' + self.ai_name + '说：', context)
-        else:
-            ans = self.llm.chat(query + '\n' + self.ai_name + '说：', context)
+        ans = self.llm.chat(query, context)
 
         # if self.classifier_enabled:
         #     topic_tag = self.classifier.do(ans)
@@ -197,4 +220,35 @@ class MainAgent(AbstractAgent):
         # else:
         print(self.ai_name, ":{}\n".format(ans))
         # self.voice_module.say(ans)
+        # 临时存储当前提问
+        self.query = query
         return ans
+
+    def check_command(self):
+        if command_flags.ai_name != self.ai_name:
+            return
+        if command_flags.history:
+            if self.lock_memory:
+                # 历史对话被打开过，重新加载历史对话（仅当lock_memory为True时重新加载）
+                self.history_vs = VectorStore(self.embeddings, self.info.history_path, chunk_size=1,
+                                              top_k=self.history_top_k)
+            # 重新加载临时历史对话
+            self.llm.load_history(self.basic_history)
+        elif command_flags.prompt:
+            # 提示词被打开过，重新加载提示词和历史对话
+            self.basic_history = load_txt_to_lst(self.info.prompt_path)
+            self.llm.load_history(self.basic_history)
+        command_flags.reset()
+
+    def check_show_command(self):
+        if command_flags.show_temp_history:
+            # 展示当前临时历史窗口
+            window = self.llm.get_history()
+            for dialog in window[1:]:
+                print(dialog[0])
+                print(self.ai_name + '说：' + dialog[1])
+        elif command_flags.show_prompt:
+            # 展示当前提示词
+            print("提示词：")
+            print(self.basic_history[0][0], end='')
+            print(self.basic_history[0][1])
