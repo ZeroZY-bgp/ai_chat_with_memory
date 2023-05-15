@@ -25,6 +25,7 @@ model_name = config.get('MODEL', 'name')
 
 def chat_with_ai(agent):
     print("---初始化完成，对话开始---")
+    print("'输入/help'可获取指令列表")
     while True:
         chat_str = ''
         while chat_str == '':
