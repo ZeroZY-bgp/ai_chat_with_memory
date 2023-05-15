@@ -1,0 +1,9 @@
+指令列表: 
+'history': 打开当前历史对话文件;
+'show temp history': 展示当前时刻临时历史对话窗口;
+'prompt': 打开当前角色提示词文件;
+'show prompt': 展示当前提示词;
+'event':打开当前角色事件列表;
+'show event':展示事件列表;
+'retry':重新回答;
+'help': 打开指令帮助文档。
