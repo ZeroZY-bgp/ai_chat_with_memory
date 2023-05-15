@@ -47,8 +47,8 @@ def get_tag(string):
 
 def load_file(filepath):
     loader = UnstructuredFileLoader(filepath, mode="elements")
-    # textsplitter = ChineseTextSplitter()
-    textsplitter = CharacterTextSplitter(separator="\n")
+    textsplitter = ChineseTextSplitter()
+    # textsplitter = CharacterTextSplitter(separator="\n")
     # textsplitter = RecursiveCharacterTextSplitter(separators=["\n\n", "\n", ",", "(", ")"],
     #                                               chunk_size=100,
     #                                               chunk_overlap=5,
@@ -102,6 +102,36 @@ def append_to_dict_file(path, key, value):
 def append_to_str_file(path, new_str):
     with open(path, 'a', encoding="utf-8") as file:
         file.write(new_str)
+
+
+def load_last_n_lines(path, n) -> List:
+    with open(path, encoding='utf-8') as f:
+        # 将文件指针移动到文件末尾
+        f.seek(0, 2)
+        # 记录文件指针位置
+        pointer = f.tell()
+        # 计数器，记录找到的'\n'数目
+        count = 0
+        # 从文件末尾向前搜索行终止符(由于记忆文件存储的结构，行数='\n'数目*2+1)
+        while pointer >= 0 and count < n * 2 + 1:
+            # 将文件指针向前移动一个字符
+            f.seek(pointer)
+            # 读取一个字符
+            try:
+                char = f.read(1)
+            except UnicodeDecodeError:
+                char = ''
+                pass
+            # 如果读取到行终止符，则增加计数器
+            if char == '\n':
+                count += 1
+            # 向前移动文件指针
+            pointer -= 1
+        # 读取最后几行
+        last_lines = list(f.readlines())
+
+    return last_lines
+
 
 
 def init_knowledge_vector_store(embeddings,
