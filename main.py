@@ -1,3 +1,5 @@
+import sys
+
 import openai
 import configparser
 import os
@@ -24,10 +26,12 @@ model_name = config.get('MODEL', 'name')
 def chat_with_ai(agent):
     print("---初始化完成，对话开始---")
     while True:
-        chat_str = input()
-        if chat_str == 'exit':
-            break
-        agent.chat(chat_str)
+        chat_str = ''
+        while chat_str == '':
+            chat_str = input((agent.user_name + "：") if agent.user_name != '' else 'user：')
+        back_msg = agent.chat(chat_str)
+        if back_msg == 'ai_chat_with_memory sys:exit':
+            return
 
 
 def input_world_name():
@@ -87,6 +91,7 @@ if __name__ == '__main__':
                                    history_window=history_window,
                                    temperature=temperature,
                                    max_history_size=history_window_size))
+            sys.exit(0)
         elif option == '2':
             print("【---欢迎使用世界管理器---】")
             while True:

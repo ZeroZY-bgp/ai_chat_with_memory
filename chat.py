@@ -50,6 +50,7 @@ def ai_vs_ai(agent1, agent2):
 
 
 if __name__ == '__main__':
+    # 单ai对话
     # chat_with_ai(MainAgent(world_name=world_name,
     #                        ai_name=ai_name,
     #                        user_name=user_name,
@@ -57,6 +58,7 @@ if __name__ == '__main__':
     #                        lock_memory=lock_memory,
     #                        temperature=temperature,
     #                        max_history_size=history_window_size))
+    # ai与ai对话
     ai_name1 = '小明'
     ai_name2 = '小红'
     agent1 = MainAgent(world_name=world_name,
