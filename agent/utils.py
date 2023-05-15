@@ -133,6 +133,25 @@ def load_last_n_lines(path, n) -> List:
     return last_lines
 
 
+def delete_last_line(file_path):
+    with open(file_path, 'r+', encoding='utf-8') as file:
+        file.seek(0, os.SEEK_END)
+        position = file.tell() - 2
+        count = 0
+        while position > 0:
+            file.seek(position)
+            try:
+                char = file.read(1)
+            except UnicodeDecodeError:
+                char = ''
+            if char == '\n':
+                count += 1
+                if count >= 2:
+                    file.seek(position + 1)
+                    file.truncate()
+                    break
+            position -= 1
+
 
 def init_knowledge_vector_store(embeddings,
                                 filepath: str or List[str],
