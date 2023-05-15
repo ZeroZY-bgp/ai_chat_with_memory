@@ -40,6 +40,9 @@ class BaseLLM:
     def _llm_type(self) -> str:
         return self.model_name
 
+    def get_history(self):
+        return self.history
+
     def load_history(self, basic_history):
         self.basic_history = basic_history
         self.basic_token_len = len(self.basic_history[0][0]) + len(self.basic_history[0][1])
@@ -48,7 +51,7 @@ class BaseLLM:
             # 历史记录为空
             self.history = copy.deepcopy(self.basic_history)
         else:
-            self.history = basic_history
+            self.history = copy.deepcopy(self.basic_history)
             # 加载历史记录最后几行
             history_lst = load_last_n_lines(self.info.history_path, self.history_window)
             pattern = r'(.+?) ' + self.info.ai_name + '说：(.+?)(?=$)'
@@ -79,8 +82,11 @@ class BaseLLM:
         if DEBUG_MODE:
             print("记忆检索片段：")
             print(context)
-
-        ans = self.get_response(query)
+        if self.user_name != '':
+            q = self.user_name + "说：" + query + '\n' + self.ai_name + '说：'
+        else:
+            q = query + '\n' + self.ai_name + '说：'
+        ans = self.get_response(q)
 
         # if DEBUG_MODE and self.model_name == 'gpt-3.5-turbo':
         #
@@ -96,12 +102,10 @@ class BaseLLM:
 
         # 恢复最开头的提示词
         self.history[0] = self.basic_history[0]
-        # 记录临时历史窗口
-        # create_txt(self.tmp_history_path, str(self.history))
 
         if not self.lock_memory:
             # 保存历史到文件中
-            append_str = self.history[-1][0].replace('\n', ' ') + self.history[-1][1] + '\n'
+            append_str = q.replace('\n', ' ') + ans + '\n'
             append_to_str_file(self.info.history_path, append_str)
         # 窗口控制
         self.history_window_control(context)
