@@ -448,7 +448,7 @@ class MainAgent:
                     print(event_str)
                     option1 = input("加入该事件？y.确定；r.基于当前窗口重新生成；其他.取消生成")
                     if option1 == 'y' or option1 == 'Y':
-                        append_to_str_file(self.info.event_path, '\n' + event_str)
+                        append_to_str_file(self.info.event_path, event_str + '\n')
                         command_flags.event = True
                         return
                     elif option1 == 'r' or option1 == 'R':
