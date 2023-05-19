@@ -31,8 +31,10 @@ def chat_with_ai(agent):
 
 def ai_vs_ai(agent1, agent2):
     print("---初始化完成，对话开始---")
-    chat_str = '现在' + agent2.ai_name + '在你面前，和' + agent2.ai_name + '打个招呼吧。'
-    agent1.user_name = 'user'
+    # chat_str = '现在' + agent2.ai_name + '在你面前，和' + agent2.ai_name + '打个招呼吧。'
+    chat_str = '现在' + agent2.ai_name + '在你面前，你们的观点极端对立，你希望反对' + agent2.ai_name + '，并驳斥关于她公开发表文章极力反对你的公司所作所为的话题。' \
+                                                                                                   '请你首先开始斥责她。'
+    agent1.user_name = ''
     chat_str = agent1.chat(chat_str)
     time.sleep(20)
     agent1.user_name = agent2.ai_name
@@ -59,13 +61,14 @@ if __name__ == '__main__':
     #                        temperature=temperature,
     #                        max_history_size=history_window_size))
     # ai与ai对话
-    ai_name1 = '小明'
-    ai_name2 = '小红'
+    ai_name1 = 'Leon'
+    ai_name2 = 'Clara'
     agent1 = MainAgent(world_name=world_name,
                        ai_name=ai_name1,
                        user_name=ai_name2,
                        model_name=model_name,
                        lock_memory=lock_memory,
+                       history_window=history_window,
                        temperature=temperature,
                        max_history_size=history_window_size)
     agent2 = MainAgent(world_name=world_name,
@@ -73,6 +76,7 @@ if __name__ == '__main__':
                        user_name=ai_name1,
                        model_name=model_name,
                        lock_memory=lock_memory,
+                       history_window=history_window,
                        temperature=temperature,
                        max_history_size=history_window_size)
     ai_vs_ai(agent1, agent2)

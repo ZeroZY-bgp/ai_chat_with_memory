@@ -10,3 +10,4 @@ sentence_transformers
 unstructured[local-inference]
 faiss-cpu
 nltk
+textdistance

@@ -93,7 +93,7 @@ class Gpt3_5freeLLM(BaseLLM):
 class ChatGLMLLM(BaseLLM):
     tokenizer: object = None
     model: object = None
-    model_name = 'ChatGlm'
+    model_name = 'ChatGLM'
 
     def __init__(self, temperature=0.1):
         self.temperature = temperature

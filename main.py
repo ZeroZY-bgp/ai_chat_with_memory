@@ -6,6 +6,7 @@ import os
 
 from agent.main_agent import MainAgent
 from agent.utils import CharacterInfo
+from template import PROMPT_TEMPLATE, IDENTITY_TEMPLATE
 from world_manager import Manager
 
 
@@ -66,7 +67,7 @@ if __name__ == '__main__':
 
     print("【---欢迎使用ai chat with memory---】")
     while True:
-        print("输入数字以选择功能：\n1.与ai对话\n2.管理世界\n3.打开世界文件夹")
+        print("输入数字以选择功能：\n1.与ai对话\n2.ai之间对话\n3.管理世界\n4.打开世界文件夹")
         option = input()
         if option == '1':
             print("是否使用config.ini预设参数？y.使用预设参数;其他.手动设置(仅设置世界名称，ai名称和用户名称三项参数)")
@@ -93,10 +94,10 @@ if __name__ == '__main__':
                                    temperature=temperature,
                                    max_history_size=history_window_size))
             sys.exit(0)
-        elif option == '2':
+        elif option == '3':
             print("【---欢迎使用世界管理器---】")
             while True:
-                print("你想做什么？\n1.创建新世界；2.创建新人物；3.修改人物信息；")
+                print("你想做什么？\n1.创建新世界；2.创建新人物；3.修改人物信息；4.返回")
                 option2 = input()
                 if option2 == '1':
                     print("输入想创建的世界名称：", end=' ')
@@ -119,26 +120,25 @@ if __name__ == '__main__':
                     print("输入要创建的新人物名称：", end=' ')
                     ai_name = input()
                     # 角色提示词
-                    prompt_str = [('以下是{{{AI_NAME}}}和{{{USER_NAME}}}的对话。'
-                                   '{{{AI_NAME}}}是一个计算机专业的学生。请大胆猜想他/她的人设和回答，并补全以下{{{AI_NAME}}}的回答。'
-                                   '(已知信息):"""{{{context}}}"""\n{{{AI_NAME}}}:',
-                                   '作为一个计算机专业学生{{{AI_NAME}}}，'
-                                   '我喜欢人工智能，也喜欢思考和学习。')]
+                    prompt_str = PROMPT_TEMPLATE
                     # 身份信息
-                    identity_str = '[{{{AI_NAME}}}身份]：家外蹲大学计算机专业学生，喜欢编程和学习人工智能，也喜欢思考和学习。'
+                    identity_str = IDENTITY_TEMPLATE.replace("{{{AI_NAME}}}", ai_name)
                     info = CharacterInfo(world_name, ai_name)
                     if manager.create_character(info, prompt_str, identity_str):
-                        print("是否打开世界文件夹？y.打开 其他.不打开")
+                        print("是否打开人物文件夹？y.打开 其他.不打开")
                         y = input()
                         if y == 'Y' or y == 'y':
-                            path = os.path.abspath('agent\\memory\\' + world_name)
+                            path = os.path.abspath(info.folder_path)
                             os.startfile(path)
                 elif option2 == '3':
                     world_name, manager = input_world_name()
                     ai_name = input_ai_name(manager)
                     print("当前角色提示词：")
-
-        elif option == '3':
+                elif option2 == '4':
+                    break
+                else:
+                    print("请输入正确的数字(1-4)")
+        elif option == '4':
             w_name = input("输入世界名称：")
             path = os.path.abspath('agent\\memory\\' + w_name)
             try:

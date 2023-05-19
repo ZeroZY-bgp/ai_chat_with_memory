@@ -19,8 +19,9 @@ class CharacterInfo:
         self.folder_path = 'agent/memory/' + self.world_name + '/' + self.ai_name
         self.prompt_path = self.folder_path + '/prompt' + self.ai_name + '.txt'
         self.history_path = self.folder_path + '/history' + self.ai_name + '.txt'
-        self.identity_path = self.folder_path + '/identity' + self.ai_name + '.txt'
+        self.entity_path = self.folder_path + '/entity' + self.ai_name + '.txt'
         self.event_path = self.folder_path + '/event' + self.ai_name + '.txt'
+        self.traits_path = self.folder_path + '/traits' + self.ai_name + '.txt'
 
 
 def get_tag(string):
