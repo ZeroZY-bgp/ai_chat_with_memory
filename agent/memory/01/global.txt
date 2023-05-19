@@ -1,1 +1,0 @@
-{'小明的认知': 'agent/memory/01/小明/identity小明.txt', '小红的认知': 'agent/memory/01/小红/identity小红.txt'}
