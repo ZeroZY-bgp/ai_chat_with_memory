@@ -2,7 +2,7 @@ import os.path
 
 import openai
 
-from tools import DialogEventGenerator
+from tools.generator import DialogEventGenerator
 from tools.utils import create_folder, create_txt, create_txt_no_content, CharacterInfo
 from template import PROMPT_TEMPLATE, IDENTITY_TEMPLATE
 
