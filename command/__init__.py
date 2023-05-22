@@ -1,7 +1,7 @@
 import configparser
 import os
 
-from tools import DialogEventGenerator
+from tools.generator import DialogEventGenerator
 from tools.utils import load_txt_to_str, append_to_str_file, load_last_n_lines, VectorStore, load_txt_to_lst
 
 command_config = configparser.ConfigParser()

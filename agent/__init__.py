@@ -6,7 +6,7 @@ from langchain import FAISS
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.text_splitter import CharacterTextSplitter
 
-from agent.audio import AudioModule
+from tools.audio import AudioModule
 from tools.text_splitter import AnswerTextSplitter, high_word_similarity_text_filter, \
     low_semantic_similarity_text_filter
 from tools.utils import load_txt_to_lst, delete_last_line, load_last_n_lines, append_to_str_file, VectorStore
