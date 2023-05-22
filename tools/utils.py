@@ -1,4 +1,3 @@
-import datetime
 import os
 import re
 from typing import List
@@ -6,8 +5,7 @@ from typing import List
 from langchain import FAISS
 from langchain.document_loaders import UnstructuredFileLoader
 
-from agent.text_splitter import ChineseTextSplitter
-from langchain.text_splitter import CharacterTextSplitter, RecursiveCharacterTextSplitter
+from langchain.text_splitter import CharacterTextSplitter
 
 VS_ROOT_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "vector_store", "")
 

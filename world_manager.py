@@ -2,8 +2,8 @@ import os.path
 
 import openai
 
-from agent.tools import DialogEventGenerator
-from agent.utils import create_folder, create_txt, create_txt_no_content, append_to_dict_file, CharacterInfo
+from tools import DialogEventGenerator
+from tools.utils import create_folder, create_txt, create_txt_no_content, CharacterInfo
 from template import PROMPT_TEMPLATE, IDENTITY_TEMPLATE
 
 openai.api_key = ''

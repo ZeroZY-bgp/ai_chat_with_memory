@@ -1,10 +1,10 @@
 import openai
 from abc import abstractmethod
 
-import agent.useless as ul
+import agent.llm.useless as ul
 from transformers import AutoTokenizer, AutoModel
 
-from agent import deepai
+from agent.llm import deepai
 
 
 class BaseLLM:

@@ -2,7 +2,7 @@ import configparser
 import openai
 import time
 
-from agent.main_agent import MainAgent
+from agent import MainAgent
 
 openai.api_key = ''
 

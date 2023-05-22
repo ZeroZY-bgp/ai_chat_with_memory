@@ -4,8 +4,8 @@ import openai
 import configparser
 import os
 
-from agent.main_agent import MainAgent
-from agent.utils import CharacterInfo
+from agent import MainAgent
+from tools.utils import CharacterInfo
 from template import PROMPT_TEMPLATE, IDENTITY_TEMPLATE
 from world_manager import Manager
 

@@ -1,9 +1,8 @@
 import configparser
 import os
-import re
 
-from agent.tools import DialogEventGenerator
-from agent.utils import load_txt_to_str, append_to_str_file, load_last_n_lines, VectorStore, load_txt_to_lst
+from tools import DialogEventGenerator
+from tools.utils import load_txt_to_str, append_to_str_file, load_last_n_lines, VectorStore, load_txt_to_lst
 
 command_config = configparser.ConfigParser()
 command_config.read('command/command.ini', encoding='utf-8-sig')

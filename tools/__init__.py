@@ -1,7 +1,5 @@
-import re
 import openai
-import agent.useless as ul
-from agent.utils import load_txt_to_str, append_to_str_file, CharacterInfo
+import agent.llm.useless as ul
 
 
 class DialogEventGenerator:
