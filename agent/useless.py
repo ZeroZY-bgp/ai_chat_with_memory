@@ -50,7 +50,6 @@ class Completion:
     @classmethod
     def __response_to_json(cls, text) -> dict:
         text = str(text.decode("utf-8"))
-
         split_text = text.rsplit("\n", 1)[1]
         to_json = json.loads(split_text)
         return to_json

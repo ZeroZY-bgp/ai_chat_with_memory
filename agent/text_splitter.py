@@ -1,3 +1,6 @@
+import copy
+
+import textdistance
 from langchain.text_splitter import CharacterTextSplitter
 import re
 from typing import List
@@ -38,3 +41,48 @@ class ChineseTextSplitter(CharacterTextSplitter):
                 id = ls.index(ele)
                 ls = ls[:id] + [i for i in ele1_ls if i] + ls[id + 1:]
         return ls
+
+
+class AnswerTextSplitter(CharacterTextSplitter):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def split_text(self, text: str) -> List[str]:
+        # 包含中文和英文标点符号的正则表达式
+        # punctuation = r'[。！？；，、‘’“”（）\[\]【】《》：!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~]'
+        punctuation = r'[。！？；，!?;,.]'
+        # 使用正则表达式分割字符串
+        segments = re.split(punctuation, text)
+        # 移除空字符串
+        segments = [segment for segment in segments if segment]
+        return segments
+
+
+def low_semantic_similarity_text_filter(agent, mem_lst):
+    # 去掉低相似度搜索结果
+    if len(mem_lst) == 0:
+        return mem_lst
+    max_score = mem_lst[-1].metadata["score"]
+    truncate_i = 0
+    for i, mem in enumerate(mem_lst):
+        if mem.metadata["score"] > max_score - agent.semantic_similarity_threshold:
+            truncate_i = i
+            break
+    return mem_lst[truncate_i:]
+
+
+def high_word_similarity_text_filter(agent, mem_lst):
+    # 字词相似度比对，算法复杂度o(n^2)
+    remaining_memory = copy.deepcopy(mem_lst)  # 创建一个副本以避免在迭代时修改原始列表
+    for i in range(len(mem_lst)):
+        for j in range(len(mem_lst)):
+            if i != j:
+                str_i = mem_lst[i].page_content
+                str_j = mem_lst[j].page_content
+                sim_score = textdistance.jaccard(str_i, str_j)
+                if sim_score > agent.word_similarity_threshold:
+                    # 如果两个字符串的字词相似度超过阈值，则删除较短的字符串（较短的字符串信息含量大概率较少）
+                    del_e = mem_lst[i] if len(str_i) < len(str_j) else mem_lst[j]
+                    if del_e in remaining_memory:
+                        remaining_memory.remove(del_e)
+    return remaining_memory

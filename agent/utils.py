@@ -6,7 +6,7 @@ from typing import List
 from langchain import FAISS
 from langchain.document_loaders import UnstructuredFileLoader
 
-from agent.chinese_text_splitter import ChineseTextSplitter
+from agent.text_splitter import ChineseTextSplitter
 from langchain.text_splitter import CharacterTextSplitter, RecursiveCharacterTextSplitter
 
 VS_ROOT_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "vector_store", "")
@@ -22,6 +22,32 @@ class CharacterInfo:
         self.entity_path = self.folder_path + '/entity' + self.ai_name + '.txt'
         self.event_path = self.folder_path + '/event' + self.ai_name + '.txt'
         self.traits_path = self.folder_path + '/traits' + self.ai_name + '.txt'
+
+
+class VectorStore:
+
+    def __init__(self, embeddings, path, textsplitter=CharacterTextSplitter(separator="\n"), chunk_size=20, top_k=6):
+        self.top_k = top_k
+        self.path = path
+        # textsplitter = ChineseTextSplitter()
+        # textsplitter = CharacterTextSplitter(separator="\n")
+        # textsplitter = RecursiveCharacterTextSplitter(separators=["\n\n", "\n", ",", "(", ")"],
+        #                                               chunk_size=100,
+        #                                               chunk_overlap=5,
+        #                                               )
+        self.core = init_vector_store(embeddings=embeddings, filepath=self.path, textsplitter=textsplitter)
+        self.chunk_size = chunk_size
+        # FAISS.similarity_search_with_score_by_vector = similarity_search_with_score_by_vector
+
+    def similarity_search_with_score(self, query):
+        if self.core is not None:
+            self.core.chunk_size = self.chunk_size
+            return self.core.similarity_search_with_score(query, self.top_k)
+        else:
+            return []
+
+    def get_path(self):
+        return self.path
 
 
 def get_tag(string):
@@ -46,14 +72,8 @@ def get_tag(string):
     return string.split('##')[0], topic_tag, emotion_tag
 
 
-def load_file(filepath):
+def load_file(filepath, textsplitter):
     loader = UnstructuredFileLoader(filepath, mode="elements")
-    textsplitter = ChineseTextSplitter()
-    # textsplitter = CharacterTextSplitter(separator="\n")
-    # textsplitter = RecursiveCharacterTextSplitter(separators=["\n\n", "\n", ",", "(", ")"],
-    #                                               chunk_size=100,
-    #                                               chunk_overlap=5,
-    #                                               )
     docs = loader.load_and_split(text_splitter=textsplitter)
     return docs
 
@@ -154,55 +174,28 @@ def delete_last_line(file_path):
             position -= 1
 
 
-def init_knowledge_vector_store(embeddings,
-                                filepath: str or List[str],
-                                vs_path: str or os.PathLike = None):
-    loaded_files = []
-    if isinstance(filepath, str):
-        if not os.path.exists(filepath):
-            print(filepath, "路径不存在")
-            return None
-        elif os.path.isfile(filepath):
-            file = os.path.split(filepath)[-1]
-            try:
-                docs = load_file(filepath)
-                loaded_files.append(filepath)
-            except Exception as e:
-                print(e)
-                print(f"{file} 未能成功加载")
-                return None
-        elif os.path.isdir(filepath):
-            docs = []
-            for file in os.listdir(filepath):
-                fullfilepath = os.path.join(filepath, file)
-                try:
-                    docs += load_file(fullfilepath)
-                    loaded_files.append(fullfilepath)
-                except Exception as e:
-                    print(e)
-                    print(f"{file} 未能成功加载")
+def init_vector_store(embeddings,
+                      filepath: str or List[str],
+                      textsplitter):
+    if not os.path.exists(filepath):
+        print(filepath, "路径不存在")
+        return None, None
+    elif os.path.isfile(filepath):
+        file = os.path.split(filepath)[-1]
+        try:
+            docs = load_file(filepath, textsplitter)
+        except Exception as e:
+            print(e)
+            print(f"{file} 未能成功加载")
+            return None, None
     else:
-        docs = []
-        for file in filepath:
-            try:
-                docs += load_file(file)
-                loaded_files.append(file)
-            except Exception as e:
-                print(e)
-                print(f"{file} 未能成功加载")
+        print(filepath, "未能成功加载")
+        return None, None
     if len(docs) > 0:
-        # if vs_path and os.path.isdir(vs_path):
-        #     vector_store = FAISS.load_local(vs_path, embeddings)
-        #     vector_store.add_documents(docs)
-        # else:
-        #     if not vs_path:
-        #         vs_path = f"""{VS_ROOT_PATH}{os.path.splitext(file)[0]}_FAISS_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}"""
         vector_store = FAISS.from_documents(docs, embeddings)
-
-        # vector_store.save_local(vs_path)
-        return vector_store, loaded_files
+        return vector_store
     else:
-        return None, loaded_files
+        return None
 
 
 def separate_list(ls: List[int]) -> List[List[int]]:
