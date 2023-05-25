@@ -25,7 +25,7 @@ class CharacterInfo:
 
 class VectorStore:
 
-    def __init__(self, embeddings, path, textsplitter=CharacterTextSplitter(separator="\n"), chunk_size=20, top_k=6):
+    def __init__(self, embeddings, path, textsplitter, chunk_size=20, top_k=6):
         self.top_k = top_k
         self.path = path
         # textsplitter = ChineseTextSplitter()

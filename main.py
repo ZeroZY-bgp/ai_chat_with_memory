@@ -11,6 +11,7 @@ from agent import MainAgent
 from tools.utils import CharacterInfo
 from template import PROMPT_TEMPLATE, IDENTITY_TEMPLATE
 from world_manager import Manager
+from worldsandbox import Sandbox
 
 config = configparser.ConfigParser()
 config.read('config.ini', encoding='utf-8-sig')
@@ -100,9 +101,10 @@ if __name__ == '__main__':
             language_model = create_llm(config['MODEL']['name'], config.getfloat('MODEL', 'temperature'))
             embedding_model = create_embedding_model(config['MODEL']['embed_model'],
                                                      config['MODEL']['embed_model_device'])
-            chat_with_ai(MainAgent(llm=language_model,
-                                   embed_model=embedding_model,
-                                   config=config))
+            agent = MainAgent(llm=language_model,
+                              embed_model=embedding_model,
+                              config=config)
+            Sandbox(world_name).chat_with_one_agent(agent)
             sys.exit(0)
         elif option == '3':
             print("【---欢迎使用世界管理器---】")

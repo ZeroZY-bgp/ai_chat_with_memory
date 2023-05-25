@@ -142,31 +142,34 @@ class MainAgent:
         # ------
         self.DEBUG_MODE = self.dev_config.getboolean('TEXT', 'DEBUG_MODE')
 
+    def get_tmp_query(self):
+        return self.query
+
     def chat(self, query):
         # ------指令部分
-        # 指令收尾工作
-        command_cleanup_task(self)
-        # 检查是否为指令
-        Pool().check(query, self.ai_name)
-        if not command_flags.not_command:
-            # sys_mes = self.execute_command(query)
-            sys_mes = execute_command(self)
-            # 执行了除重试指令以外的指令，不进行对话
-            if sys_mes != '':
-                return sys_mes
-            # 执行重试指令
-            if command_flags.retry:
-                if self.query == '':
-                    print("当前没有提问，请输入提问。")
-                    return 'ai_chat_with_memory sys:当前没有提问，无法重试提问。'
-                # 从临时存储中取出提问
-                query = self.query
-                if not self.lock_memory:
-                    # 删除历史文件最后一行
-                    delete_last_line(self.info.history_path)
-                    # 重新加载临时历史对话
-                    self.load_history(self.basic_history)
-                self.step -= 1
+        # # 指令收尾工作
+        # command_cleanup_task(self)
+        # # 检查是否为指令
+        # Pool().check(query, self.ai_name)
+        # if not command_flags.not_command:
+        #     # sys_mes = self.execute_command(query)
+        #     sys_mes = execute_command(self)
+        #     # 执行了除重试指令以外的指令，不进行对话
+        #     if sys_mes != '':
+        #         return sys_mes
+        #     # 执行重试指令
+        #     if command_flags.retry:
+        #         if self.query == '':
+        #             print("当前没有提问，请输入提问。")
+        #             return 'ai_chat_with_memory sys:当前没有提问，无法重试提问。'
+        #         # 从临时存储中取出提问
+        #         query = self.query
+        #         if not self.lock_memory:
+        #             # 删除历史文件最后一行
+        #             delete_last_line(self.info.history_path)
+        #             # 重新加载临时历史对话
+        #             self.load_history(self.basic_history)
+        #         self.step -= 1
         # ------
 
         # 文本中加入提问者身份
@@ -220,6 +223,7 @@ class MainAgent:
             if self.voice_enabled:
                 voice_thread = threading.Thread(target=self.voice_module.say, args=(ans,))
                 voice_thread.start()
+            print(self.ai_name + "：", end='')
             for c in ans:
                 print(c, end='', flush=True)
                 time.sleep(0.2)
@@ -251,7 +255,9 @@ class MainAgent:
                     break
             if self.DEBUG_MODE:
                 print("窗口缩小， 历史对话：")
-                print(self.history)
+                for dialog in self.history:
+                    print(dialog[0], end=' ')
+                    print(dialog[1])
 
     def load_history(self, basic_history):
         self.basic_history = basic_history
@@ -320,7 +326,6 @@ class MainAgent:
         dialog_mem = []
         if not self.lock_memory and self.step >= self.update_history_vs_per_step:
             self.history_vs = VectorStore(self.embeddings, self.info.history_path,
-                                          chunk_size=10,
                                           top_k=self.history_top_k,
                                           textsplitter=self.history_textsplitter)
             self.step = 1
