@@ -25,7 +25,7 @@ class AudioModule:
     def say(self, text):
         audio_name = 'basic.wav'
         if self.sound_library == 'local':
-            self.engine.save_to_file(text, 'basic.wav')
+            self.engine.save_to_file(text, audio_name)
             self.engine.runAndWait()
         elif self.sound_library == 'gtts':
             tts = gTTS(text, lang='zh-cn')
