@@ -1,27 +1,19 @@
+import importlib
 import sys
 
 import openai
 import configparser
 import os
 
+from langchain.embeddings import HuggingFaceEmbeddings
+
 from agent import MainAgent
 from tools.utils import CharacterInfo
 from template import PROMPT_TEMPLATE, IDENTITY_TEMPLATE
 from world_manager import Manager
 
-
 config = configparser.ConfigParser()
 config.read('config.ini', encoding='utf-8-sig')
-
-openai.api_key = config.get('API', 'openai_api_key')
-lock_memory = config.getboolean('MEMORY', 'lock_memory')
-history_window = config.getint('MEMORY', 'history_window')
-ai_name = config.get('AI', 'name')
-world_name = config.get('WORLD', 'name')
-user_name = config.get('USER', 'name')
-history_window_size = config.getint('HISTORY', 'window_size')
-temperature = config.getfloat('TEMPERATURE', 'temperature')
-model_name = config.get('MODEL', 'name')
 
 
 def chat_with_ai(agent):
@@ -63,36 +55,54 @@ def input_ai_name(mgr):
     return name
 
 
+def get_class(module_name, class_name):
+    module = importlib.import_module(module_name)
+    return getattr(module, class_name)
+
+
+def create_llm(llm_class_name, temperature):
+    llm_class = get_class("agent.llm", llm_class_name)
+    llm_instance = llm_class(temperature)
+    if hasattr(llm_instance, 'load_model'):
+        llm_instance.load_model()
+    if hasattr(llm_instance, 'set_device'):
+        llm_instance.set_device(config['MODEL']['model_device'])
+    return llm_instance
+
+
+def create_embedding_model(embed_model_path, embed_device):
+    return HuggingFaceEmbeddings(model_name=embed_model_path,
+                                 model_kwargs={'device': embed_device})
+
+
 if __name__ == '__main__':
 
     print("【---欢迎使用ai chat with memory---】")
     while True:
-        print("输入数字以选择功能：\n1.与ai对话\n2.ai之间对话\n3.管理世界\n4.打开世界文件夹")
+        print("输入数字以选择功能：\n1.与ai对话\n2.ai之间对话\n3.管理世界\n4.打开世界文件夹\n5.打开设置")
         option = input()
         if option == '1':
-            print("是否使用config.ini预设参数？y.使用预设参数;其他.手动设置(仅设置世界名称，ai名称和用户名称三项参数)")
-            option1 = input()
-            if option1 != 'y' and option1 != 'Y':
-                world_name, manager = input_world_name()
-                ai_name = input_ai_name(manager)
-                print("输入用户名称：", end=' ')
-                user_name = input()
-            else:
-                # 检查各项参数是否合法
-                manager = Manager(world_name)
-                if not manager.world_is_created:
-                    print(world_name, "世界未创建，请检查config.ini。")
-                    break
+            config = configparser.ConfigParser()
+            config.read('config.ini', encoding='utf-8-sig')
+            openai.api_key = config.get('API', 'openai_api_key')
+            # 检查参数是否合法
+            world_name = config['WORLD']['name']
+            ai_name = config['AI']['name']
+            manager = Manager(world_name)
+            if not manager.world_is_created:
+                print(world_name, "世界未创建，请检查config.ini文件。")
+                break
+            if not manager.character_is_created(ai_name):
+                print(world_name, "人物未创建，请检查config.ini文件。")
+                break
 
             print("设置完毕")
-            chat_with_ai(MainAgent(world_name=world_name,
-                                   ai_name=ai_name,
-                                   user_name=user_name,
-                                   model_name=model_name,
-                                   lock_memory=lock_memory,
-                                   history_window=history_window,
-                                   temperature=temperature,
-                                   max_history_size=history_window_size))
+            language_model = create_llm(config['MODEL']['name'], config.getfloat('MODEL', 'temperature'))
+            embedding_model = create_embedding_model(config['MODEL']['embed_model'],
+                                                     config['MODEL']['embed_model_device'])
+            chat_with_ai(MainAgent(llm=language_model,
+                                   embed_model=embedding_model,
+                                   config=config))
             sys.exit(0)
         elif option == '3':
             print("【---欢迎使用世界管理器---】")
@@ -145,5 +155,8 @@ if __name__ == '__main__':
                 os.startfile(path)
             except FileNotFoundError:
                 print("没有该世界对应的文件夹，请确认是否拼写正确或重新创建该世界。")
+        elif option == '5':
+            path = os.path.abspath('config.ini')
+            os.startfile(path)
         else:
             print("请输入正确数字(1-3)。")

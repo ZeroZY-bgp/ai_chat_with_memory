@@ -85,11 +85,8 @@ class Manager:
         # 历史对话文件
         create_txt_no_content(info.history_path)
         # 身份信息
-        # 1.身份详细信息录入角色本地信息
         identity_str = identity_str.replace("{{{AI_NAME}}}", info.ai_name)
         create_txt(info.entity_path, identity_str)
-        # # 2.身份文件地址录入全局信息中
-        # append_to_dict_file(self.global_txt, info.ai_name + '的认知', info.entity_path)
         print("角色", "\"" + info.ai_name + "\"", "已创建")
         return True
 
