@@ -2,6 +2,7 @@ import os
 import re
 from typing import List
 
+import openai
 from langchain import FAISS
 from langchain.document_loaders import UnstructuredFileLoader
 
@@ -46,6 +47,22 @@ class VectorStore:
 
     def get_path(self):
         return self.path
+
+
+def openai_moderation(history, query):
+    history_lst = []
+    for dialog in history:
+        history_lst.append(dialog[0] + dialog[1])
+    history_lst.append(query)
+    res = openai.Moderation.create(
+        input=history_lst
+    )
+    for i, r in enumerate(res["results"]):
+        if r["flagged"]:
+            print(r)
+            print(history_lst[i])
+            return True
+    return False
 
 
 def get_tag(string):
