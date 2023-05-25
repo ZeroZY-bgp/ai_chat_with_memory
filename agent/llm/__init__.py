@@ -138,10 +138,14 @@ class Gpt3Deepai(BaseLLM):
 class ChatGLMLLM(BaseLLM):
     tokenizer: object = None
     model: object = None
-    model_name = 'ChatGLM'
+    model_name = 'chatglm-6b-int4'
+    device = 'cuda'
 
     def __init__(self, temperature=0.1):
         self.temperature = temperature
+
+    def set_device(self, device):
+        self.device = device
 
     def get_response(self, query, history):
         ans, _ = self.model.chat(
@@ -153,6 +157,10 @@ class ChatGLMLLM(BaseLLM):
         )
         return ans
 
+    def change_model_name(self, model_name="chatglm-6b"):
+        self.model_name = model_name
+        self.load_model(model_name_or_path=model_name)
+
     def load_model(self,
                    model_name_or_path: str = "chatglm-6b-int4",
                    **kwargs):
@@ -160,5 +168,8 @@ class ChatGLMLLM(BaseLLM):
             model_name_or_path,
             trust_remote_code=True
         )
-        self.model = AutoModel.from_pretrained(model_name_or_path, trust_remote_code=True).half().cuda()
+        if self.device == 'cuda':
+            self.model = AutoModel.from_pretrained(model_name_or_path, trust_remote_code=True).half().cuda()
+        else:
+            self.model = AutoModel.from_pretrained(model_name_or_path, trust_remote_code=True).float()
         self.model = self.model.eval()

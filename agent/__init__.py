@@ -1,24 +1,26 @@
+import configparser
 import copy
 import os
 import random
+import threading
+import time
 
+import openai
 from langchain import FAISS
-from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.text_splitter import CharacterTextSplitter
 
 from tools.audio import AudioModule
 from tools.text_splitter import AnswerTextSplitter, high_word_similarity_text_filter, \
     low_semantic_similarity_text_filter
-from tools.utils import load_txt_to_lst, delete_last_line, load_last_n_lines, append_to_str_file, VectorStore
+from tools.utils import load_txt_to_lst, delete_last_line, load_last_n_lines, append_to_str_file, VectorStore, \
+    openai_moderation
 from agent.llm import Gpt3_5LLM, ChatGLMLLM, Gpt3_5Useless, Gpt3Deepai
 from world_manager import CharacterInfo
 from command import Pool, command_flags, execute_command, command_cleanup_task
 
-embed_model_path = 'text2vec/GanymedeNil_text2vec-large-chinese'
-# embed_model_path = 'text2vec/shibing624_text2vec_base_chinese'
-# embed_model_path = 'GanymedeNil/text2vec-large-chinese'
-device = 'cuda'
-DEBUG_MODE = True
+
+def collect_context(text_lst):
+    return "\n".join([text for text in text_lst])
 
 
 def get_docs_with_score(docs_with_score):
@@ -27,10 +29,6 @@ def get_docs_with_score(docs_with_score):
         doc.metadata["score"] = score
         docs.append(doc)
     return docs
-
-
-def collect_context(text_lst):
-    return "\n".join([text for text in text_lst])
 
 
 def get_related_text_lst(query, vs, lst):
@@ -48,106 +46,47 @@ def mem_to_lst(mem):
 class MainAgent:
 
     def __init__(self,
-                 world_name,
-                 ai_name,
-                 user_name='user',
-                 model_name='gpt3_5',
-                 lock_memory=False,
-                 history_window=3,
-                 window_decrease_size=400,
-                 max_history_size=1100,
-                 context_chunk_size=20,
-                 temperature=0.01,
-                 streaming=True,
-                 memory_search_top_k=3,
-                 embedding_model_device=device,
-                 speak_rate='快'):
+                 llm,
+                 embed_model,
+                 config):
         """
+        :param llm: 大模型实例
+        :param embed_model: 记忆检索使用的模型实例
+        :param config: 基本设置（具体设置在config.ini）
+        """
+        # ---基本设置参数
+        self.base_config = config
+        self.init_base_param_from_config()
+        # ---
 
-        :param world_name: 世界名称，不同世界对应不同人设。
-        :param model_name: 模型名称，可用：chatglm-6b-int4、gpt3_5。
-        :param lock_memory: 锁定对话记忆，为False时每次对话都要读取记忆文件，速度较慢，但每次对话增加新的对话到记忆文件中；
-                            为True仅第一次加载时读取记忆文件，速度较快，但不增加新的记忆。
-        :param max_history_size: 在内存里的最大对话历史窗口token大小。
-        :param context_chunk_size: 上下文chunk数量，越大则能载入更多记忆内容。
-        :param streaming: 流式输出。
-        :param memory_search_top_k: 记忆和提问的相关性最高前k个提取到提问上下文中。
-        :param embedding_model_device: embedding模型的device（可选参数为 'cpu'、'cuda'）。
-        :param speak_rate: 阅读回答的速度。
-        """
-        self.world_name = world_name
-        self.ai_name = ai_name
-        self.info = CharacterInfo(self.world_name, self.ai_name)
-        self.user_name = user_name
-        self.memory_search_top_k = memory_search_top_k
-        self.context_chunk_size = context_chunk_size
-        self.lock_memory = lock_memory
-        self.history_window = history_window
-        self.window_decrease_size = window_decrease_size
+        # ------高级开发参数
+        self.dev_config = configparser.ConfigParser()
+        self.dev_config.read('dev_settings.ini', encoding='utf-8-sig')
+        self.init_dev_param_from_config()
+        # ------
+
         # ---暂存区
-        self.query = ''  # 提问的临时存储，用于重试提问
+        self.query = ''
         self.entity_text = ''
         self.dialog_text = ''
         self.event_text = ''
         self.last_ans = ''
-
-        # ---
-        if speak_rate == '快':
-            rate = 200
-        elif speak_rate == '中':
-            rate = 150
-        elif speak_rate == '慢':
-            rate = 100
-        else:
-            rate = 150
-
-        self.streaming = streaming
-        embedding_model_path = embed_model_path
-        embedding_device = embedding_model_device
-        # self.streaming = streaming
-        self.embeddings = HuggingFaceEmbeddings(model_name=embedding_model_path,
-                                                model_kwargs={'device': embedding_device})
-
-        # ------高级开发参数
-        self.entity_top_k = 2
-        self.history_top_k = 8
-        self.event_top_k = 1
-        self.semantic_similarity_threshold = 100.0  # 语义相似度分数阈值（相似度太小的会被去掉）
-        self.word_similarity_threshold = 0.6  # 字词相似度分数阈值（相似度太大的会被去掉）
-        self.update_history_vs_per_step = 6  # 不锁定记忆的情况下，更新记忆vector store的频率（数值越小更新频率越大）
-        self.similarity_comparison_context_window = 3  # 用于相似度比较的对话上文窗口
-        self.answer_extract_enabled = True  # 对话记忆仅提取ai回答
-        self.fragment_answer = False  # 将回答打碎
-
-        # ------
         self.step = 1
+        # ---
 
+        self.embeddings = embed_model
         # vector store
         self.entity_textsplitter = CharacterTextSplitter(separator="\n")
-        self.entity_vs = VectorStore(self.embeddings, self.info.entity_path, chunk_size=30,
+        self.entity_vs = VectorStore(self.embeddings, self.info.entity_path,
                                      top_k=self.entity_top_k, textsplitter=self.entity_textsplitter)
         self.history_textsplitter = CharacterTextSplitter(separator="\n")
-        self.history_vs = VectorStore(self.embeddings, self.info.history_path, chunk_size=30,
+        self.history_vs = VectorStore(self.embeddings, self.info.history_path,
                                       top_k=self.history_top_k, textsplitter=self.history_textsplitter)
         self.event_textsplitter = CharacterTextSplitter(separator="\n")
-        self.event_vs = VectorStore(self.embeddings, self.info.event_path, chunk_size=30,
+        self.event_vs = VectorStore(self.embeddings, self.info.event_path,
                                     top_k=self.event_top_k, textsplitter=self.event_textsplitter)
         print("【---记忆模块加载完成---】")
-        # ---model（此处加入自定义包装的模型）
-        self.model_name = model_name
-        if self.model_name == 'chatglm-6b-int4':
-            self.path = 'THUDM/chatglm-6b-int4'
-            # self.path = 'chatglm-6b-int4'
-            self.llm = ChatGLMLLM(temperature=temperature)
-            self.llm.load_model(self.path)
-        elif self.model_name == 'gpt3_5':
-            self.llm = Gpt3_5LLM(temperature=temperature)
-        elif model_name == 'gpt3_5useless':
-            self.llm = Gpt3_5Useless(temperature=temperature)
-        elif model_name == 'gpt3deepai':
-            self.llm = Gpt3Deepai(temperature=temperature)
-        else:
-            raise AttributeError("模型选择参数出错！传入的参数为", self.model_name)
+        self.llm = llm
         # 历史对话列表
         self.history = []
         # 初始化提示语
@@ -158,12 +97,50 @@ class MainAgent:
         # 窗口控制
         self.basic_token_len = 0
         self.total_token_size = 0
-        self.max_history_size = max_history_size
         print("【---对话模型加载完成---】")
         # ---voice
+        # ---声音模块
+        speak_rate = self.base_config['VOICE']['speak_rate']
+        if speak_rate == '快':
+            rate = 200
+        elif speak_rate == '中':
+            rate = 150
+        elif speak_rate == '慢':
+            rate = 100
+        else:
+            rate = 150
+        # ---
         self.voice_module = AudioModule(sound_library='local', rate=rate)
         print("【---声音模块加载完成---】")
         # ---
+
+    def init_base_param_from_config(self):
+        self.world_name = self.base_config['WORLD']['name']
+        self.ai_name = self.base_config['AI']['name']
+        self.info = CharacterInfo(self.world_name, self.ai_name)
+        self.user_name = self.base_config['USER']['name']
+        self.lock_memory = self.base_config.getboolean('MEMORY', 'lock_memory')
+        self.history_window = self.base_config.getint('MEMORY', 'history_window')
+        self.max_token_size = self.base_config.getint('HISTORY', 'max_token_size')
+        self.token_decrease_size = self.base_config.getint('HISTORY', 'token_decrease_size')
+        self.voice_enabled = self.base_config.getboolean('VOICE', 'enabled')
+        self.streaming = self.base_config.getboolean('OUTPUT', 'streaming')
+        self.entity_top_k = self.base_config.getint('MEMORY', 'entity_top_k')
+        self.history_top_k = self.base_config.getint('MEMORY', 'history_top_k')
+        self.event_top_k = self.base_config.getint('MEMORY', 'event_top_k')
+
+    def init_dev_param_from_config(self):
+        # ------高级开发参数
+        self.semantic_similarity_threshold = self.dev_config.getfloat('TEXT', 'semantic_similarity_threshold')
+        self.word_similarity_threshold = self.dev_config.getfloat('TEXT', 'word_similarity_threshold')
+        self.update_history_vs_per_step = self.dev_config.getint('TEXT', 'update_history_vs_per_step')
+        self.similarity_comparison_context_window = \
+            self.dev_config.getint('TEXT', 'similarity_comparison_context_window')
+        self.answer_extract_enabled = self.dev_config.getboolean('TEXT', 'answer_extract_enabled')
+        self.fragment_answer = self.dev_config.getboolean('TEXT', 'fragment_answer')
+        self.openai_text_moderate = self.dev_config.getboolean('MODERATION', 'openai_text_moderate')
+        # ------
+        self.DEBUG_MODE = self.dev_config.getboolean('TEXT', 'DEBUG_MODE')
 
     def chat(self, query):
         # ------指令部分
@@ -204,16 +181,22 @@ class MainAgent:
         context_len = self.embedding_context(self.entity_text, self.dialog_text, self.event_text)
         # ------
 
+        # 安全性检查
+        if self.llm.__class__.__name__ == "Gpt3_5LLM" \
+                and self.openai_text_moderate \
+                and openai_moderation(self.history[:1], q_start + query):
+            print("WARN: openai使用协议")
+            return 'no result'
+
         # ---与大模型通信
-        # res = openai.Moderation.create(
-        #     input=q_start
-        # )
-        # print(res["results"][0])
         ans = self.llm.chat(q_start + query + '\n' + self.ai_name + '说：', self.history)
-        # res = openai.Moderation.create(
-        #     input=ans
-        # )
-        # print(res["results"][0])
+
+        if self.llm.__class__.__name__ == "Gpt3_5LLM" \
+                and self.openai_text_moderate:
+            res = openai.Moderation.create(input=ans)
+            if res["results"][0]["flagged"]:
+                print(res["results"][0])
+                print("WARN: openai使用协议")
         # ---
 
         # ---处理对话历史
@@ -233,9 +216,20 @@ class MainAgent:
         # 窗口控制
         self.history_window_control(context_len)
         # ---
-
-        print(self.ai_name, ":{}\n".format(ans))
-        # self.voice_module.say(ans)
+        if self.streaming:
+            if self.voice_enabled:
+                voice_thread = threading.Thread(target=self.voice_module.say, args=(ans,))
+                voice_thread.start()
+            for c in ans:
+                print(c, end='', flush=True)
+                time.sleep(0.2)
+            print()
+            if self.voice_enabled:
+                voice_thread.join()
+        else:
+            print(self.ai_name, ":{}\n".format(ans))
+            if self.voice_enabled:
+                self.voice_module.say(ans)
         # 临时存储当前提问
         self.query = query
         return ans
@@ -247,15 +241,15 @@ class MainAgent:
         return comparison_string
 
     def history_window_control(self, context_len):
-        if self.total_token_size + context_len >= self.max_history_size:
-            while self.total_token_size + context_len > (self.max_history_size - self.window_decrease_size):
+        if self.total_token_size + context_len >= self.max_token_size:
+            while self.total_token_size + context_len > (self.max_token_size - self.token_decrease_size):
                 try:
                     self.total_token_size -= (len(self.history[1][0]) + len(self.history[1][1]))
                     self.history.pop(1)
                 except IndexError:
                     # print("窗口不能再缩小了")
                     break
-            if DEBUG_MODE:
+            if self.DEBUG_MODE:
                 print("窗口缩小， 历史对话：")
                 print(self.history)
 
@@ -297,13 +291,13 @@ class MainAgent:
         first_ans = self.history[0][1].replace("{{{AI_NAME}}}", self.ai_name)
 
         context_len = len(entity) + len(dialog) + len(event)
-        if DEBUG_MODE:
+        if self.DEBUG_MODE:
             print("context长度:", context_len)
             print("提示词总长度:", len(context))
 
         self.history[0] = (context, first_ans)
 
-        if DEBUG_MODE:
+        if self.DEBUG_MODE:
             print("实体记忆：")
             print(entity)
             print("对话记忆：")
@@ -330,7 +324,7 @@ class MainAgent:
                                           top_k=self.history_top_k,
                                           textsplitter=self.history_textsplitter)
             self.step = 1
-            if DEBUG_MODE:
+            if self.DEBUG_MODE:
                 print("History vector store updated.")
 
         self.step += 1
@@ -369,4 +363,3 @@ class MainAgent:
         for dialog in mem:
             parts = dialog.page_content.split(splitter)
             dialog.page_content = splitter + parts[-1] if has_ai_name else parts[-1]
-
