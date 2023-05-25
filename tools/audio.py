@@ -9,7 +9,7 @@ class AudioModule:
 
     def __init__(self, sound_library='local', rate=130):
         if sound_library not in ['local', 'gtts']:
-            raise AttributeError("语音库选择参数出错！传入的参数为", sound_library)
+            raise AttributeError("语音库选择参数出错！传入的参数为", sound_library, "可选参数：", ['local', 'gtts'])
         self.sound_library = sound_library
         if self.sound_library == 'local':
             self.engine = pyttsx3.init()
@@ -19,6 +19,8 @@ class AudioModule:
             self.engine.setProperty('voice', voices[0].id)
             # 设置语速
             self.engine.setProperty('rate', rate)
+        # 调音高
+        self.step = 4
 
     def say(self, text):
         audio_name = 'basic.wav'
@@ -33,12 +35,9 @@ class AudioModule:
         # 播放声音
         sd.play(audio_processed, sr)
         sd.wait()
-        sf.write('output.wav', audio_processed, sr)
+        # sf.write('output.wav', audio_processed, sr)
 
-    @staticmethod
-    def voice_process(audio_name):
-        # Load audio file
+    def voice_process(self, audio_name):
         y, sr = librosa.load(audio_name)
-        # Shift the pitch by 4 semitones
-        audio_p = librosa.effects.pitch_shift(y, sr=sr, n_steps=4)
+        audio_p = librosa.effects.pitch_shift(y, sr=sr, n_steps=self.step)
         return audio_p, sr
