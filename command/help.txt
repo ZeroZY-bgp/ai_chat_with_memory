@@ -5,7 +5,7 @@
 'show prompt': 展示当前提示词;
 'event': 打开当前角色事件列表;
 'entity': 打开当前角色实体记忆;
-'show_context': 展示当前对话搜索到的记忆内容;
+'show context': 展示当前对话搜索到的记忆内容;
 'dialog to event': 转换一段对话为事件，存储到事件文件中;
 'retry': 重新回答;
 'help': 打开指令帮助文档;

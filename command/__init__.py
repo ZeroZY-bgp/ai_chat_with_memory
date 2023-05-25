@@ -90,7 +90,7 @@ class Pool:
             return 'dialog to event'
         elif command == command_list['continue_talk']:
             command_flags.continue_talk = True
-            return 'dialog to event'
+            return 'continue'
         elif command == command_list['retry']:
             command_flags.retry = True
             return 'retry'
@@ -179,7 +179,6 @@ def execute_command(agent):
             print(dialog)
         option = input("转换以上对话为新事件？y.确定；其他.取消")
         if option == 'y' or option == 'Y':
-
             deg = DialogEventGenerator()
             while True:
                 print("正在生成中...")
@@ -190,11 +189,11 @@ def execute_command(agent):
                 if option1 == 'y' or option1 == 'Y':
                     append_to_str_file(agent.info.event_path, event_str + '\n')
                     command_flags.event = True
-                    return
+                    return 'ai_chat_with_memory sys:dialog to event success'
                 elif option1 == 'r' or option1 == 'R':
                     continue
                 else:
-                    return
+                    return 'ai_chat_with_memory sys:dialog to event cancel'
     elif command_flags.continue_talk:
         return 'ai_chat_with_memory sys:continue'
     elif command_flags.exit:
@@ -210,10 +209,12 @@ def execute_command(agent):
 def command_cleanup_task(agent):
     if command_flags.ai_name != agent.ai_name:
         return
+
     if command_flags.history:
         if agent.lock_memory:
             # 历史对话被打开过，重新加载历史对话（仅当lock_memory为True时重新加载）
             agent.history_vs = VectorStore(agent.embeddings, agent.info.history_path, chunk_size=1,
+                                           textsplitter=agent.history_textsplitter,
                                            top_k=agent.history_top_k)
         # 重新加载临时历史对话
         agent.load_history(agent.basic_history)
@@ -224,8 +225,10 @@ def command_cleanup_task(agent):
     elif command_flags.event:
         # 事件被打开过，重新加载事件
         agent.event_vs = VectorStore(agent.embeddings, agent.info.event_path, chunk_size=30,
+                                     textsplitter=agent.event_textsplitter,
                                      top_k=agent.event_top_k)
     elif command_flags.entity:
         agent.entity_vs = VectorStore(agent.embeddings, agent.info.entity_path, chunk_size=30,
+                                      textsplitter=agent.entity_textsplitter,
                                       top_k=agent.entity_top_k)
     command_flags.reset()

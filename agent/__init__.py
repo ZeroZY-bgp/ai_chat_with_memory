@@ -16,7 +16,6 @@ from tools.utils import load_txt_to_lst, delete_last_line, load_last_n_lines, ap
     openai_moderation
 from agent.llm import Gpt3_5LLM, ChatGLMLLM, Gpt3_5Useless, Gpt3Deepai
 from world_manager import CharacterInfo
-from command import Pool, command_flags, execute_command, command_cleanup_task
 
 
 def collect_context(text_lst):
@@ -145,33 +144,13 @@ class MainAgent:
     def get_tmp_query(self):
         return self.query
 
-    def chat(self, query):
-        # ------指令部分
-        # # 指令收尾工作
-        # command_cleanup_task(self)
-        # # 检查是否为指令
-        # Pool().check(query, self.ai_name)
-        # if not command_flags.not_command:
-        #     # sys_mes = self.execute_command(query)
-        #     sys_mes = execute_command(self)
-        #     # 执行了除重试指令以外的指令，不进行对话
-        #     if sys_mes != '':
-        #         return sys_mes
-        #     # 执行重试指令
-        #     if command_flags.retry:
-        #         if self.query == '':
-        #             print("当前没有提问，请输入提问。")
-        #             return 'ai_chat_with_memory sys:当前没有提问，无法重试提问。'
-        #         # 从临时存储中取出提问
-        #         query = self.query
-        #         if not self.lock_memory:
-        #             # 删除历史文件最后一行
-        #             delete_last_line(self.info.history_path)
-        #             # 重新加载临时历史对话
-        #             self.load_history(self.basic_history)
-        #         self.step -= 1
-        # ------
+    def get_tmp_ans(self):
+        return self.last_ans
 
+    def set_user_name(self, user_name):
+        self.user_name = user_name
+
+    def chat(self, query):
         # 文本中加入提问者身份
         q_start = self.user_name + "说：" if self.user_name != '' else ''
         # ------检索记忆（实体、对话、事件）
@@ -216,6 +195,7 @@ class MainAgent:
             # 保存历史到文件中
             append_str = q_start + query + ' ' + self.ai_name + '说：' + ans + '\n'
             append_to_str_file(self.info.history_path, append_str)
+        self.last_ans = ans
         # 窗口控制
         self.history_window_control(context_len)
         # ---
