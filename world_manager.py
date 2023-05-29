@@ -16,8 +16,7 @@ class Manager:
     def __init__(self, world_name):
         self.world_name = world_name
         # 主目录
-        self.world_folder = "agent/memory/" + self.world_name
-        # self.global_txt = self.world_folder + '/global.txt'
+        self.world_folder = "memory/" + self.world_name
         self.extra_txt = self.world_folder + '/extra.txt'
         if os.path.exists(self.world_folder):
             self.world_is_created = True

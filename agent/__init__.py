@@ -6,16 +6,12 @@ import threading
 import time
 
 import openai
-from langchain import FAISS
-from langchain.text_splitter import CharacterTextSplitter
 
 from tools.audio import AudioModule
-from tools.text_splitter import AnswerTextSplitter, high_word_similarity_text_filter, \
-    low_semantic_similarity_text_filter
-from tools.utils import load_txt_to_lst, delete_last_line, load_last_n_lines, append_to_str_file, VectorStore, \
-    openai_moderation
+from tools.store import SimpleStoreTool, VectorStoreTool
+from tools.text import high_word_similarity_text_filter
+from tools.utils import load_txt_to_lst, load_last_n_lines, append_to_str_file, openai_moderation, CharacterInfo
 from agent.llm import Gpt3_5LLM, ChatGLMLLM, Gpt3_5Useless, Gpt3Deepai
-from world_manager import CharacterInfo
 
 
 def collect_context(text_lst):
@@ -30,30 +26,27 @@ def get_docs_with_score(docs_with_score):
     return docs
 
 
-def get_related_text_lst(query, vs, lst):
+def get_related_text_lst_from_vector_store(query, vs, lst):
     related_text_with_score = vs.similarity_search_with_score(query)
     lst.extend(get_docs_with_score(related_text_with_score))
-
-
-def mem_to_lst(mem):
-    lst = []
-    for i in range(len(mem)):
-        lst.append(mem[i].page_content)
-    return lst
 
 
 class MainAgent:
 
     def __init__(self,
+                 world_name,
+                 ai_name,
                  llm,
                  embed_model,
                  config):
         """
         :param llm: 大模型实例
-        :param embed_model: 记忆检索使用的模型实例
-        :param config: 基本设置（具体设置在config.ini）
+        :param embed_model: 记忆检索使用的文本转向量模型实例
+        :param config: 基本设置（config.ini）
         """
         # ---基本设置参数
+        self.world_name = world_name
+        self.ai_name = ai_name
         self.base_config = config
         self.init_base_param_from_config()
         # ---
@@ -74,16 +67,21 @@ class MainAgent:
         # ---
 
         self.embeddings = embed_model
-        # vector store
-        self.entity_textsplitter = CharacterTextSplitter(separator="\n")
-        self.entity_vs = VectorStore(self.embeddings, self.info.entity_path,
-                                     top_k=self.entity_top_k, textsplitter=self.entity_textsplitter)
-        self.history_textsplitter = CharacterTextSplitter(separator="\n")
-        self.history_vs = VectorStore(self.embeddings, self.info.history_path,
-                                      top_k=self.history_top_k, textsplitter=self.history_textsplitter)
-        self.event_textsplitter = CharacterTextSplitter(separator="\n")
-        self.event_vs = VectorStore(self.embeddings, self.info.event_path,
-                                    top_k=self.event_top_k, textsplitter=self.event_textsplitter)
+        if self.embeddings is None:
+            self.use_embed_model = False
+        else:
+            self.use_embed_model = True
+        # store
+        if self.use_embed_model:
+            self.store_tool = VectorStoreTool(self.info, self.embeddings, self.entity_top_k, self.history_top_k, self.event_top_k)
+        else:
+            # 简单的字词对比引擎
+            self.store_tool = SimpleStoreTool(self.info, self.entity_top_k, self.history_top_k, self.event_top_k)
+
+        self.entity_store = self.store_tool.load_entity_store()
+        self.history_store = self.store_tool.load_history_store()
+        self.event_store = self.store_tool.load_event_store()
+
         print("【---记忆模块加载完成---】")
         self.llm = llm
         # 历史对话列表
@@ -114,8 +112,6 @@ class MainAgent:
         # ---
 
     def init_base_param_from_config(self):
-        self.world_name = self.base_config['WORLD']['name']
-        self.ai_name = self.base_config['AI']['name']
         self.info = CharacterInfo(self.world_name, self.ai_name)
         self.user_name = self.base_config['USER']['name']
         self.lock_memory = self.base_config.getboolean('MEMORY', 'lock_memory')
@@ -124,19 +120,20 @@ class MainAgent:
         self.token_decrease_size = self.base_config.getint('HISTORY', 'token_decrease_size')
         self.voice_enabled = self.base_config.getboolean('VOICE', 'enabled')
         self.streaming = self.base_config.getboolean('OUTPUT', 'streaming')
+        self.words_per_line = self.base_config.getint('OUTPUT', 'words_per_line')
         self.entity_top_k = self.base_config.getint('MEMORY', 'entity_top_k')
         self.history_top_k = self.base_config.getint('MEMORY', 'history_top_k')
         self.event_top_k = self.base_config.getint('MEMORY', 'event_top_k')
 
     def init_dev_param_from_config(self):
         # ------高级开发参数
-        self.semantic_similarity_threshold = self.dev_config.getfloat('TEXT', 'semantic_similarity_threshold')
+        # self.semantic_similarity_threshold = self.dev_config.getfloat('TEXT', 'semantic_similarity_threshold')
         self.word_similarity_threshold = self.dev_config.getfloat('TEXT', 'word_similarity_threshold')
         self.update_history_vs_per_step = self.dev_config.getint('TEXT', 'update_history_vs_per_step')
         self.similarity_comparison_context_window = \
             self.dev_config.getint('TEXT', 'similarity_comparison_context_window')
         self.answer_extract_enabled = self.dev_config.getboolean('TEXT', 'answer_extract_enabled')
-        self.fragment_answer = self.dev_config.getboolean('TEXT', 'fragment_answer')
+        self.fragment_memory = self.dev_config.getboolean('TEXT', 'fragment_answer')
         self.openai_text_moderate = self.dev_config.getboolean('MODERATION', 'openai_text_moderate')
         # ------
         self.DEBUG_MODE = self.dev_config.getboolean('TEXT', 'DEBUG_MODE')
@@ -155,7 +152,7 @@ class MainAgent:
         q_start = self.user_name + "说：" if self.user_name != '' else ''
         # ------检索记忆（实体、对话、事件）
         # 获取上文窗口
-        entity_lst, dialog_lst, event_lst = self.get_related_text(self.get_context_window(q_start + query))
+        entity_lst, dialog_lst, event_lst = self.get_related(self.get_context_window(q_start + query))
         # 嵌入提示词
         self.entity_text = collect_context(entity_lst)
         self.dialog_text = collect_context(dialog_lst)
@@ -199,19 +196,28 @@ class MainAgent:
         # 窗口控制
         self.history_window_control(context_len)
         # ---
+        p_ans = self.ai_name + '：' + ans + '\n'
         if self.streaming:
             if self.voice_enabled:
                 voice_thread = threading.Thread(target=self.voice_module.say, args=(ans,))
                 voice_thread.start()
-            print(self.ai_name + "：", end='')
-            for c in ans:
+            p_ans = self.ai_name + '：' + ans + '\n'
+            # print(self.ai_name + "：", end='')
+            word_count = 0
+            for c in p_ans:
                 print(c, end='', flush=True)
                 time.sleep(0.2)
+                word_count += 1
+                if word_count >= self.words_per_line:
+                    print()
+                    word_count = 0
             print()
             if self.voice_enabled:
                 voice_thread.join()
         else:
-            print(self.ai_name, ":{}\n".format(ans))
+            # print(self.ai_name, ":{}\n".format(ans))
+            for i in range(0, len(p_ans), self.words_per_line):
+                print(p_ans[i:i + self.words_per_line])
             if self.voice_enabled:
                 self.voice_module.say(ans)
         # 临时存储当前提问
@@ -260,6 +266,7 @@ class MainAgent:
                 else:
                     tuple_result = (dialog[:first_index], dialog[first_index:])
                 self.history.append(tuple_result)
+        self.history_store = self.store_tool.load_history_store()
 
     def embedding_context(self, entity, dialog, event):
 
@@ -292,59 +299,44 @@ class MainAgent:
             print(event)
         return context_len
 
-    def get_related_text(self, query):
-        # 实体记忆
-        entity_mem = []
-        get_related_text_lst(query, self.entity_vs, entity_mem)
+    def get_related(self, query):
+
+        entity_mem = self.store_tool.get_entity_mem(query, self.entity_store)
+
+        if self.fragment_memory:
+            # 打碎实体策略
+            entity_mem = self.store_tool.entity_fragment(query, entity_mem)
+
         # 字词高相似度去重
         entity_mem = high_word_similarity_text_filter(self, entity_mem)
-        # 语义低相似度去重
-        entity_mem = low_semantic_similarity_text_filter(self, entity_mem)
-        entity_lst = mem_to_lst(entity_mem)
 
-        # 对话记忆
-        dialog_mem = []
         if not self.lock_memory and self.step >= self.update_history_vs_per_step:
-            self.history_vs = VectorStore(self.embeddings, self.info.history_path,
-                                          top_k=self.history_top_k,
-                                          textsplitter=self.history_textsplitter)
+            self.history_store = self.store_tool.load_history_store()
             self.step = 1
             if self.DEBUG_MODE:
-                print("History vector store updated.")
+                print("History store updated.")
 
         self.step += 1
 
-        get_related_text_lst(query, self.history_vs, dialog_mem)
+        dialog_mem = self.store_tool.get_history_mem(query, self.history_store)
+
         if self.answer_extract_enabled:
-            self.answer_extract(dialog_mem)
-            if self.fragment_answer:
-                tsp = AnswerTextSplitter()
-                docs = tsp.split_documents(dialog_mem)
-                db = FAISS.from_documents(docs, self.embeddings)
-                dialog_mem = db.similarity_search_with_score(query, len(docs))
-                dialog_mem = get_docs_with_score(dialog_mem)
+            # 仅提取AI回答
+            self.store_tool.answer_extract(dialog_mem, has_ai_name=not self.fragment_memory)
+            if self.fragment_memory:
+                # 打碎AI回答策略
+                dialog_mem = self.store_tool.dialog_fragment(query, dialog_mem)
 
         dialog_mem = high_word_similarity_text_filter(self, dialog_mem)
-        dialog_mem = low_semantic_similarity_text_filter(self, dialog_mem)
-        dialog_lst = mem_to_lst(dialog_mem)
 
-        # 事件记忆
-        event_mem = []
-        get_related_text_lst(query, self.event_vs, event_mem)
+        event_mem = self.store_tool.get_event_mem(query, self.event_store)
+
         event_mem = high_word_similarity_text_filter(self, event_mem)
-        event_mem = low_semantic_similarity_text_filter(self, event_mem)
-        event_lst = mem_to_lst(event_mem)
 
         # 随机打乱列表
-        random.shuffle(entity_lst)
-        random.shuffle(dialog_lst)
-        random.shuffle(event_lst)
+        random.shuffle(entity_mem)
+        random.shuffle(dialog_mem)
+        random.shuffle(event_mem)
 
-        return entity_lst, dialog_lst, event_lst
+        return entity_mem, dialog_mem, event_mem
 
-    def answer_extract(self, mem, has_ai_name=True):
-        # 提取对话，仅有ai的回答
-        splitter = self.ai_name + '说：'
-        for dialog in mem:
-            parts = dialog.page_content.split(splitter)
-            dialog.page_content = splitter + parts[-1] if has_ai_name else parts[-1]

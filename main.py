@@ -1,13 +1,9 @@
-import importlib
 import sys
 
 import openai
 import configparser
 import os
 
-from langchain.embeddings import HuggingFaceEmbeddings
-
-from agent import MainAgent
 from tools.utils import CharacterInfo
 from template import PROMPT_TEMPLATE, IDENTITY_TEMPLATE
 from world_manager import Manager
@@ -15,18 +11,6 @@ from worldsandbox import Sandbox
 
 config = configparser.ConfigParser()
 config.read('config.ini', encoding='utf-8-sig')
-
-
-def chat_with_ai(agent):
-    print("---初始化完成，对话开始---")
-    print("'输入/help'可获取指令列表")
-    while True:
-        chat_str = ''
-        while chat_str == '':
-            chat_str = input((agent.user_name + "：") if agent.user_name != '' else 'user：')
-        back_msg = agent.chat(chat_str)
-        if back_msg == 'ai_chat_with_memory sys:exit':
-            return
 
 
 def input_world_name():
@@ -56,26 +40,6 @@ def input_ai_name(mgr):
     return name
 
 
-def get_class(module_name, class_name):
-    module = importlib.import_module(module_name)
-    return getattr(module, class_name)
-
-
-def create_llm(llm_class_name, temperature):
-    llm_class = get_class("agent.llm", llm_class_name)
-    llm_instance = llm_class(temperature)
-    if hasattr(llm_instance, 'load_model'):
-        llm_instance.load_model()
-    if hasattr(llm_instance, 'set_device'):
-        llm_instance.set_device(config['MODEL']['model_device'])
-    return llm_instance
-
-
-def create_embedding_model(embed_model_path, embed_device):
-    return HuggingFaceEmbeddings(model_name=embed_model_path,
-                                 model_kwargs={'device': embed_device})
-
-
 if __name__ == '__main__':
 
     print("【---欢迎使用ai chat with memory---】")
@@ -94,18 +58,30 @@ if __name__ == '__main__':
                 print(world_name, "世界未创建，请检查config.ini文件。")
                 break
             if not manager.character_is_created(ai_name):
+                print(ai_name, "人物未创建，请检查config.ini文件。")
+                break
+
+            print("设置完毕")
+            Sandbox(world_name).chat_with_one_agent(config)
+            sys.exit(0)
+        elif option == '2':
+            config = configparser.ConfigParser()
+            config.read('config.ini', encoding='utf-8-sig')
+            openai.api_key = config.get('API', 'openai_api_key')
+            # 检查参数是否合法
+            world_name = config['WORLD']['name']
+            ai_name = config['AI']['name']
+            manager = Manager(world_name)
+            if not manager.world_is_created:
+                print(world_name, "世界未创建，请检查config.ini文件。")
+                break
+            if not manager.character_is_created(ai_name):
                 print(world_name, "人物未创建，请检查config.ini文件。")
                 break
 
             print("设置完毕")
-            language_model = create_llm(config['MODEL']['name'], config.getfloat('MODEL', 'temperature'))
-            embedding_model = create_embedding_model(config['MODEL']['embed_model'],
-                                                     config['MODEL']['embed_model_device'])
-            agent = MainAgent(llm=language_model,
-                              embed_model=embedding_model,
-                              config=config)
-            Sandbox(world_name).chat_with_one_agent(agent)
-            sys.exit(0)
+            agent_str_lst = ['Alice', 'Lisa']
+            Sandbox(world_name).chat_with_multi_agent(agent_str_lst, config)
         elif option == '3':
             print("【---欢迎使用世界管理器---】")
             while True:
