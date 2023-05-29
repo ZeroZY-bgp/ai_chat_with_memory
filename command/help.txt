@@ -1,12 +1,17 @@
 指令列表: 
 'history': 打开当前历史对话文件;
-'show temp history': 展示当前时刻临时历史对话窗口;
+'folder': 打开当前角色文件夹;
 'prompt': 打开当前角色提示词文件;
-'show prompt': 展示当前提示词;
 'event': 打开当前角色事件列表;
 'entity': 打开当前角色实体记忆;
+
+'show temp history': 展示当前时刻临时历史对话窗口;
 'show context': 展示当前对话搜索到的记忆内容;
+'show prompt': 展示当前提示词;
+
 'dialog to event': 转换一段对话为事件，存储到事件文件中;
+'continue': 让当前角色继续回答;
 'retry': 重新回答;
+
 'help': 打开指令帮助文档;
 'exit': 退出对话。

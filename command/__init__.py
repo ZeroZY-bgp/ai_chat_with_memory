@@ -2,7 +2,8 @@ import configparser
 import os
 
 from tools.generator import DialogEventGenerator
-from tools.utils import load_txt_to_str, append_to_str_file, load_last_n_lines, VectorStore, load_txt_to_lst
+from tools.store import VectorStore
+from tools.utils import load_txt_to_str, append_to_str_file, load_last_n_lines, load_txt_to_lst, load_txt
 
 command_config = configparser.ConfigParser()
 command_config.read('command/command.ini', encoding='utf-8-sig')
@@ -213,9 +214,7 @@ def command_cleanup_task(agent):
     if command_flags.history:
         if agent.lock_memory:
             # 历史对话被打开过，重新加载历史对话（仅当lock_memory为True时重新加载）
-            agent.history_vs = VectorStore(agent.embeddings, agent.info.history_path, chunk_size=1,
-                                           textsplitter=agent.history_textsplitter,
-                                           top_k=agent.history_top_k)
+            agent.history_store = agent.store_tool.load_history_store()
         # 重新加载临时历史对话
         agent.load_history(agent.basic_history)
     elif command_flags.prompt:
@@ -223,12 +222,9 @@ def command_cleanup_task(agent):
         agent.basic_history = load_txt_to_lst(agent.info.prompt_path)
         agent.load_history(agent.basic_history)
     elif command_flags.event:
-        # 事件被打开过，重新加载事件
-        agent.event_vs = VectorStore(agent.embeddings, agent.info.event_path, chunk_size=30,
-                                     textsplitter=agent.event_textsplitter,
-                                     top_k=agent.event_top_k)
+        # 事件记录被打开过，重新加载事件记录
+        agent.event_store = agent.store_tool.load_event_store()
     elif command_flags.entity:
-        agent.entity_vs = VectorStore(agent.embeddings, agent.info.entity_path, chunk_size=30,
-                                      textsplitter=agent.entity_textsplitter,
-                                      top_k=agent.entity_top_k)
+        # 实体记录被打开过，重新加载实体记录
+        agent.entity_store = agent.store_tool.load_entity_store()
     command_flags.reset()
