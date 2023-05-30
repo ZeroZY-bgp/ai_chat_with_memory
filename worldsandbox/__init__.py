@@ -1,4 +1,5 @@
 import importlib
+import time
 from typing import List
 
 from langchain.embeddings import HuggingFaceEmbeddings, OpenAIEmbeddings
@@ -39,6 +40,10 @@ class Sandbox:
         self.language_model = None
         self.embedding_model = None
         self.multi_agent_chat_strategy = 'round'
+        self.ai_names = None
+        self.cur_ai = ''
+        self.auto = False
+        self.delay_s = 10
 
     def set_models(self, config):
         self.language_model = create_llm(config['MODEL']['name'],
@@ -71,22 +76,48 @@ class Sandbox:
             if back_msg == 'chat':
                 agent.chat(self.chat_str)
 
-    def chat_with_multi_agent(self, agent_str_lst: List[str], config):
-        if len(agent_str_lst) == 0:
+    def chat_with_multi_agent(self, ai_names: List[str], config):
+        if len(ai_names) == 0:
             print("空ai列表，请检查参数")
             return
-        agent_lst = {}
-        for name in agent_str_lst:
-            agent_lst[name] = self.init_agent(config, config['WORLD']['name'], name)
+
+        self.ai_names = ai_names
+        self.cur_ai = config['MULTI_AI']['first']
+        self.chat_str = config['MULTI_AI']['greeting']
+        self.auto = config.getboolean('MULTI_AI', 'auto')
+        self.delay_s = config.getint('MULTI_AI', 'delay') if self.auto else 0
+        self.multi_agent_chat_strategy = config.get('MULTI_AI', 'strategy')
+        self.set_models(config)
+
+        agents = []
+        for name in ai_names:
+            agents.append(self.init_agent(config, config['WORLD']['name'], name))
+
         if self.multi_agent_chat_strategy == 'round':
-            start_prompt = ''
-            self.chat_str = start_prompt
-            pre_agent_name = agent_lst[0].ai_name
-            for agent in agent_lst:
-                agent.user_name = pre_agent_name
-                self.chat_str = agent.chat(self.chat_str)
-                pre_agent_name = agent.ai_name
-                input("按任意键继续")
+            self.round_chat(agents)
+        else:
+            print("策略参数错误，请检查config.ini")
+
+    def round_chat(self, agents: List):
+        idx = self.ai_names.index(self.cur_ai)
+        ai_num = len(self.ai_names)
+        # 处理首个对话，加入到该ai的历史中
+        agents[idx].save_dialog_to_file(self.cur_ai + '说：' + self.chat_str + '\n')
+        # 重新加载历史
+        agents[idx].load_history(agents[idx].basic_history)
+
+        # 开始轮询对话
+        while True:
+            idx = (idx + 1) % ai_num
+            agents[idx].set_user_name(self.cur_ai)
+            self.chat_str = agents[idx].chat(self.chat_str)
+            self.cur_ai = agents[idx].ai_name
+            if self.auto:
+                time.sleep(self.delay_s)
+            else:
+                input_str = ' '
+                while input_str != '':
+                    input_str = input("按回车继续")
 
     def check_command(self, query, agent):
         # ------指令部分

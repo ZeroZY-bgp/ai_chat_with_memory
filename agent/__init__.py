@@ -82,7 +82,7 @@ class MainAgent:
         self.history_store = self.store_tool.load_history_store()
         self.event_store = self.store_tool.load_event_store()
 
-        print("【---记忆模块加载完成---】")
+        print("【---" + self.ai_name + "记忆模块加载完成---】")
         self.llm = llm
         # 历史对话列表
         self.history = []
@@ -94,7 +94,7 @@ class MainAgent:
         # 窗口控制
         self.basic_token_len = 0
         self.total_token_size = 0
-        print("【---对话模型加载完成---】")
+        print("【---" + self.ai_name + "对话模型加载完成---】")
         # ---voice
         # ---声音模块
         speak_rate = self.base_config['VOICE']['speak_rate']
@@ -108,7 +108,7 @@ class MainAgent:
             rate = 150
         # ---
         self.voice_module = AudioModule(sound_library='local', rate=rate)
-        print("【---声音模块加载完成---】")
+        print("【---" + self.ai_name + "声音模块加载完成---】")
         # ---
 
     def init_base_param_from_config(self):
@@ -141,7 +141,7 @@ class MainAgent:
     def get_tmp_query(self):
         return self.query
 
-    def get_tmp_ans(self):
+    def get_last_ans(self):
         return self.last_ans
 
     def set_user_name(self, user_name):
@@ -189,9 +189,9 @@ class MainAgent:
         self.history[0] = self.basic_history[0]
 
         if not self.lock_memory:
-            # 保存历史到文件中
-            append_str = q_start + query + ' ' + self.ai_name + '说：' + ans + '\n'
-            append_to_str_file(self.info.history_path, append_str)
+            # 保存新对话到文件中
+            dialog = q_start + query + ' ' + self.ai_name + '说：' + ans + '\n'
+            self.save_dialog_to_file(dialog)
         self.last_ans = ans
         # 窗口控制
         self.history_window_control(context_len)
@@ -223,6 +223,9 @@ class MainAgent:
         # 临时存储当前提问
         self.query = query
         return ans
+
+    def save_dialog_to_file(self, dialog):
+        append_to_str_file(self.info.history_path, dialog)
 
     def get_context_window(self, query):
         lines = load_last_n_lines(self.info.history_path, self.similarity_comparison_context_window - 1)

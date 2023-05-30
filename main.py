@@ -70,18 +70,30 @@ if __name__ == '__main__':
             openai.api_key = config.get('API', 'openai_api_key')
             # 检查参数是否合法
             world_name = config['WORLD']['name']
-            ai_name = config['AI']['name']
+            ai_names = config['MULTI_AI']['names']
+            # 获取名字列表
+            valid_punctuation = ['、', '，', '.', '。', '|', '/']
+            for p in valid_punctuation:
+                ai_names = ai_names.replace(p, ',')
+            ai_names = ai_names.split(',')
+            ai_names = [name for name in ai_names if name]
+
             manager = Manager(world_name)
             if not manager.world_is_created:
                 print(world_name, "世界未创建，请检查config.ini文件。")
                 break
-            if not manager.character_is_created(ai_name):
-                print(world_name, "人物未创建，请检查config.ini文件。")
-                break
 
+            is_created = True
+            for name in ai_names:
+                if not manager.character_is_created(name):
+                    print(name, "人物未创建，请检查config.ini文件。")
+                    is_created = False
+                    break
+            if not is_created:
+                break
             print("设置完毕")
-            agent_str_lst = ['Alice', 'Lisa']
-            Sandbox(world_name).chat_with_multi_agent(agent_str_lst, config)
+            Sandbox(world_name).chat_with_multi_agent(ai_names, config)
+
         elif option == '3':
             print("【---欢迎使用世界管理器---】")
             while True:
