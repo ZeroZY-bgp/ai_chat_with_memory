@@ -95,7 +95,6 @@ if __name__ == '__main__':
     manager = Manager(world_name="test")
     # 创建一个世界，如果已存在则不会创建，template为True则生成模板人物
     manager.create_world(template=True)
-    # 以下提示词中出现的“{{{}}}”的内容在实际对话中会被替换为具体内容，用户不需要更改
     # 角色提示词
     p_str = PROMPT_TEMPLATE
     # 身份信息
@@ -103,6 +102,3 @@ if __name__ == '__main__':
     information = CharacterInfo(world_name="test", ai_name="小红")
     # 创建角色
     manager.create_character(information, prompt_str=p_str, identity_str=i_str)
-    # 产生事件，只有足够的身份信息才能产生具体事件
-    cha_lst = ['小明', '小红']
-    # manager.create_event(cha_lst, model_name='gpt3_5free')

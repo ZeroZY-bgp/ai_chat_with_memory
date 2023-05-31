@@ -11,24 +11,10 @@ from tools.audio import AudioModule
 from tools.store import SimpleStoreTool, VectorStoreTool
 from tools.text import high_word_similarity_text_filter
 from tools.utils import load_txt_to_lst, load_last_n_lines, append_to_str_file, openai_moderation, CharacterInfo
-from agent.llm import Gpt3_5LLM, ChatGLMLLM, Gpt3_5Useless, Gpt3Deepai
 
 
 def collect_context(text_lst):
     return "\n".join([text for text in text_lst])
-
-
-def get_docs_with_score(docs_with_score):
-    docs = []
-    for doc, score in docs_with_score:
-        doc.metadata["score"] = score
-        docs.append(doc)
-    return docs
-
-
-def get_related_text_lst_from_vector_store(query, vs, lst):
-    related_text_with_score = vs.similarity_search_with_score(query)
-    lst.extend(get_docs_with_score(related_text_with_score))
 
 
 class MainAgent:
@@ -40,6 +26,8 @@ class MainAgent:
                  embed_model,
                  config):
         """
+        :param world_name: 世界名称
+        :param ai_name: 角色名称
         :param llm: 大模型实例
         :param embed_model: 记忆检索使用的文本转向量模型实例
         :param config: 基本设置（config.ini）
@@ -215,7 +203,6 @@ class MainAgent:
             if self.voice_enabled:
                 voice_thread.join()
         else:
-            # print(self.ai_name, ":{}\n".format(ans))
             for i in range(0, len(p_ans), self.words_per_line):
                 print(p_ans[i:i + self.words_per_line])
             if self.voice_enabled:
