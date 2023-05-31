@@ -53,7 +53,10 @@ python main.py
 ## 	:computer:需求
 目前文件操作仅支持Windows系统。
 
-默认使用GPT3.5（需要api key），如果使用了本地部署的大模型，则需关注大模型推理的配置需求。
+默认使用GPT3.5（需要api key），如果使用了本地部署的大模型（包括Embedding），则需关注大模型推理的配置需求。
+- Embedding 模型硬件需求
+
+    默认使用的 Embedding 模型 [GanymedeNil/text2vec-large-chinese](https://huggingface.co/GanymedeNil/text2vec-large-chinese/tree/main) 约占显存 < 2GB，可修改在 CPU 中运行。
 
 ## :wrench:如何修改人设和世界观？
 :thinking:本项目的ai通过提示词来进行对话，每次对话会从记忆文件（包括人设、历史对话、角色经历的事件等）中检索与提问或对话相关的内容加入到提示词中，
