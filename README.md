@@ -129,13 +129,19 @@ user：
 项目内置了指令系统，意在方便用户对记忆文件进行修改。
 常用指令：
 ```commandline
-/help 打开指令帮助文档
+/help 打开指令帮助
 /history 打开当前角色历史对话文件
-/entity 打开当前角色实体记忆
-/event 打开当前角色事件列表
+/entity 打开当前角色实体记忆文件
+/event 打开当前角色所有事件文件
 /prompt 打开当前角色提示词文件
+
 /continue 让当前角色继续回答
 /retry 重新回答
 ```
+### :grey_exclamation:提示词
+默认提示词模板位于(template/__init__.py)中。对话时会根据检索的记忆对相应板块的标记进行替换。
+
+### :hammer_and_wrench:高级
+dev_settings.ini是开发者设置，可以将DEBUG_MODE设置为True，就能在对话中查看记忆检索的情况，以此辅助记忆文件修改。
 
 ### :thinking:为什么是 [实体记忆]、[对话记忆]、[事件记忆]？
