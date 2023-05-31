@@ -3,6 +3,10 @@
 :robot:自定义虚拟对话AI，可自定义人设和世界观，支持记忆检索。用户可在与AI的不断对话中修改记忆内容，以达到用户的理想人设（建议基于GPT3.5或包装自己的大模型接口使用）。
 
 :bulb:本项目启发于[langchain](https://python.langchain.com/en/latest/index.html)、[langchain-ChatGLM](https://github.com/imClumsyPanda/langchain-ChatGLM)和[虚拟小镇:houses: Generative Agents: Interactive Simulacra of Human Behavior](https://arxiv.org/pdf/2304.03442.pdf)。
+
+:high_brightness:本项目中Embedding模型默认使用[GanymedeNil/text2vec-large-chinese](https://huggingface.co/GanymedeNil/text2vec-large-chinese/tree/main)，LLM默认使用GPT3.5。
+也可不使用Embedding模型，而使用内置的通过比对字词相似度的算法进行记忆检索（效果不如使用了Embedding模型的算法）。
+
 ### :student:与ai对话
 ```commandline
 >>>介绍一下自己
@@ -33,7 +37,7 @@
 >>>小明 :听起来我们有很多共同点啊，小红。我也在学习深度学习和机器学习，同时也在参与一个开源项目的开发。希望我们可以互相交流学习，一起进步。
 >>>小红 :是啊，听起来我们的兴趣和方向很相似呢。我也非常乐意和你交流学习，互相帮助。一起进步！
 ```
-## 开始
+## 	:racing_car:开始
 ```commandline
 git clone https://github.com/ZeroZY-bgp/ai_chat_with_memory.git
 ```
@@ -53,12 +57,13 @@ python main.py
 :thinking:本项目的ai通过提示词来进行对话，每次对话会从记忆文件（包括人设、历史对话、角色经历的事件等）中检索与提问或对话相关的内容加入到提示词中，
 以此影响对话。用户在对话中可通过指令打开记忆文件或提示词，修改人设和世界观。
 
+记忆文件分为三部分：实体记忆（当前AI对其他人、事、物的认识）、对话记忆（与其他实体进行交流的对话记录）、事件记忆（虚拟人的重要事件，用户可用指令将对话进行转化，也可手动输入）。
 ## :open_book:指南
 主目录下的config.ini文件是与AI对话时的基本配置文件。
 
 该项目使用的大致流程：创建世界->修改提示词、人设->与AI对话->若未达到用户期望，则修改对话内容或提示词、人设等->与AI对话->......
 
-### example
+### Example
 ```commandline
 python main.py
 ```
@@ -86,3 +91,23 @@ python main.py
 >>>y
 ```
 如果是Windows操作系统，此时会通过文件管理器打开该世界所在的文件夹。
+修改config.ini以下参数:
+
+[AI]
+
+name=小明
+
+[WORLD]
+
+name=example
+
+```commandline
+【---欢迎使用AI chat with memory---】
+输入数字以选择功能：
+1.与ai对话
+2.ai之间对话
+3.管理世界
+4.打开世界文件夹
+5.打开设置
+>>>1
+```
