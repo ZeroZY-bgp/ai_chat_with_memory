@@ -1,8 +1,8 @@
-# AI自定义虚拟人-基于本地记忆的大模型应用
-# 简介
+# 自定义AI虚拟人-基于本地多元记忆的大模型应用
+## 简介
 :robot:自定义虚拟对话ai，可自定义人设和世界观，支持记忆检索。用户可在与ai的不断对话中修改记忆内容，以达到用户的理想人设（建议基于GPT3.5或包装自己的大模型接口使用）。
 
-:bulb:本项目启发于[langchain](https://python.langchain.com/en/latest/index.html)和[langchain-ChatGLM](https://github.com/imClumsyPanda/langchain-ChatGLM)。
+:bulb:本项目启发于[langchain](https://python.langchain.com/en/latest/index.html)、[langchain-ChatGLM](https://github.com/imClumsyPanda/langchain-ChatGLM)和[虚拟小镇:houses: Generative Agents: Interactive Simulacra of Human Behavior](https://arxiv.org/pdf/2304.03442.pdf)。
 ### 与ai对话
 ```commandline
 >>>介绍一下自己
@@ -33,7 +33,7 @@
 >>>小明 :听起来我们有很多共同点啊，小红。我也在学习深度学习和机器学习，同时也在参与一个开源项目的开发。希望我们可以互相交流学习，一起进步。
 >>>小红 :是啊，听起来我们的兴趣和方向很相似呢。我也非常乐意和你交流学习，互相帮助。一起进步！
 ```
-# 快速开始
+## 开始
 ```commandline
 git clone https://github.com/ZeroZY-bgp/ai_chat_with_memory.git
 ```
@@ -44,86 +44,10 @@ pip install -r requirements.txt
 ```commandline
 python main.py
 ```
-# 如何修改人设和世界观？
+## 需求
+目前文件操作仅支持Windows系统。
+
+如果使用了本地部署的大模型，则需关注大模型推理的配置需求。
+## 如何修改人设和世界观？
 本项目的ai通过提示词来进行对话，每次对话会从记忆文件（包括人设、历史对话、角色经历的事件等）中检索与提问或对话相关的内容加入到提示词中，
-以此影响对话。接下来提供一个示例，让我们来看看记忆文件是如何影响人设的。
-## 创建世界
-```commandline
-python main.py
-```
-```commandline
-【---欢迎使用ai chat with memory---】
-输入数字以选择功能：
-1.与ai对话
-2.管理世界
-3.打开世界文件夹
->>>2
-```
-```commandline
-【---欢迎使用世界管理器---】
-你想做什么？
-1.创建新世界；2.创建新人物；3.修改人物信息；
->>>1
-输入想创建的世界名称：
->>>example
-是否使用模板？(人物为小明，包括提示词、身份信息。)y.使用模板 其他.不使用模板
->>>y
-世界已创建
-角色 "小明" 已创建
-模板人物已创建
-是否打开世界文件夹？y.打开 其他.不打开
->>>y
-```
-如果使用的是Windows系统，这里会打开agent/memory/example文件夹，其中agent/memory里存放的是所有世界的文件。
-接下来，让我们创建一个人物"小红"。
-## 创建人物
-```commandline
-你想做什么？
-1.创建新世界；2.创建新人物；3.修改人物信息；
->>>2
-输入世界名称： 
->>>example
-输入要创建的新人物名称： 
->>>小红
-角色 "小红" 已创建
-是否打开世界文件夹？y.打开 其他.不打开
->>>n
-```
-在"example"世界文件夹里，可以看到"小红"、"小明"两个文件夹，还有"extra.txt"和"global.txt"。这里进入"小红"文件夹内，有四个txt文件，其中[event小红.txt]记录小红经历过的事件，[history小红.txt]记录小红所有历史对话记录，[identity小红.txt]记录小红自己的身份信息和她认知中的其他人、事、物的信息。[prompt小红.txt]里存放的是小红的提示词，在实际对话中起到影响人设的作用。
-<br>接下来，与小红对话，先查看对话效果。
-## 与ai对话
-首先打开config.ini设置参数：<br>
-[API]<br>
-openai_api_key =（你的api key，使用GPT3.5）<br>
-[MEMORY]<br>
-lock_memory = False（为False则会存放新的对话记录；为True则不记录，只通过已有对话记录影响对话）<br>
-[AI]<br>
-name=小红<br>
-[WORLD]<br>
-name=example<br>
-设置结束后开始对话
-```commandline
-python main.py
-```
-```commandline
-【---欢迎使用ai chat with memory---】
-输入数字以选择功能：
-1.与ai对话
-2.管理世界
-3.打开世界文件夹
->>>1
-是否使用config.ini预设参数？y.使用预设参数;其他.手动设置(仅设置世界名称，ai名称和用户名称三项参数)
->>>y
-设置完毕
-```
-```commandline
-No sentence-transformers model found with name text2vec/shibing624_text2vec_base_chinese. Creating a new one with MEAN pooling.
-【---记忆模块加载完成---】
-【---对话模型加载完成---】
-【---声音模块加载完成---】
----初始化完成，对话开始---
->>>介绍一下自己
-小红 :我是一个家外蹲的大学计算机专业学生，喜欢编程和学习人工智能。我觉得计算机科学是一个非常有趣和有用的领域，它可以帮助我们解决很多现实世界中的问题。我也喜欢思考和学习，不断地探索和学习新的知识和技能。
->>>你最近在做什么
-小红 :最近，我在学习深度学习和机器学习的相关知识，以及不同的编程语言和框架，如Python和TensorFlow。我也在参加一些编程竞赛和项目，以提高我的实践能力和技能水平。同时，我也在思考如何将计算机科学的知识应用到实际生活中，为社会做出贡献。
-```
+以此影响对话。用户在对话中可通过指令打开记忆文件或提示词，修改人设和世界观。
