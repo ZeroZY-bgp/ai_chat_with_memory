@@ -1,6 +1,7 @@
-# ai_chat_with_memory
+# AI自定义虚拟人-基于本地记忆的大模型应用
 # 简介
-自定义虚拟对话ai模板，可自定义人设和世界观，支持记忆检索。在与ai的不断对话中修改记录，以达到用户的理想人设（建议基于GPT3.5或包装自己的大模型接口使用）。
+:robot:自定义虚拟对话ai，可自定义人设和世界观，支持记忆检索。用户可在与ai的不断对话中修改记忆内容，以达到用户的理想人设（建议基于GPT3.5或包装自己的大模型接口使用）。
+:bulb:本项目启发于[langchain](https://python.langchain.com/en/latest/index.html)和[langchain-ChatGLM](https://github.com/imClumsyPanda/langchain-ChatGLM)。
 ### 与ai对话
 ```commandline
 >>>介绍一下自己
@@ -41,10 +42,6 @@ pip install -r requirements.txt
 运行：
 ```commandline
 python main.py
-```
-直接使用config.ini文件与ai对话：
-```commandline
-python chat.py
 ```
 # 如何修改人设和世界观？
 本项目的ai通过提示词来进行对话，每次对话会从记忆文件（包括人设、历史对话、角色经历的事件等）中检索与提问或对话相关的内容加入到提示词中，
