@@ -142,11 +142,29 @@ user：
 
 /continue 让当前角色继续回答
 /retry 重新回答
+/dialog to event 对话内容转事件
 ```
+其中'/dialog to event'目前仅支持GPT3.5模型。
+
 ### :grey_exclamation:提示词
 默认提示词模板位于[此处](template/__init__.py)。对话时会根据检索的记忆对相应板块的标记进行替换。
 
 ### :hammer_and_wrench:高级
 dev_settings.ini是开发者设置，将DEBUG_MODE设置为True就能在对话中查看记忆检索的情况，以此辅助记忆文件修改。
 
-### :thinking:为什么是 [实体记忆]、[对话记忆]、[事件记忆]？
+包装自己的大模型可以参考[此处](agent/llm/__init__.py)，目前支持两种类型的包装方式，一种是本地模型的例子（ChatGLM-6b-int4），另一种是远程模型的例子（GPT3.5）。
+
+## :page_with_curl:To do list
+- [ ] 多人对话下的指令系统
+- [ ] 完善多人对话提示词
+- [ ] UI界面(need help!)
+- [ ] 重写声音模块，增强声音模块的扩展性
+
+## :label:其他
+多人对话目前仍不完善，没有达到step by step chat的效果。
+
+多人对话下的修改由于涉及到多个AI，每个AI都有不同的记忆，修改记忆更加麻烦。需要思考多人对话下的新的记忆存放逻辑
+
+需要UI界面:world_map:以增强可用性。
+
+目前项目仍在初期阶段，很可能随时重构代码。
