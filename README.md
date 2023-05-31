@@ -139,7 +139,7 @@ user：
 /retry 重新回答
 ```
 ### :grey_exclamation:提示词
-默认提示词模板位于(template/__init__.py)中。对话时会根据检索的记忆对相应板块的标记进行替换。
+默认提示词模板位于[此处](template/__init__.py)中。对话时会根据检索的记忆对相应板块的标记进行替换。
 
 ### :hammer_and_wrench:高级
 dev_settings.ini是开发者设置，可以将DEBUG_MODE设置为True，就能在对话中查看记忆检索的情况，以此辅助记忆文件修改。
