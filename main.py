@@ -42,7 +42,7 @@ def input_ai_name(mgr):
 
 if __name__ == '__main__':
 
-    print("【---欢迎使用ai chat with memory---】")
+    print("【---欢迎使用AI chat with memory---】")
     while True:
         print("输入数字以选择功能：\n1.与ai对话\n2.ai之间对话\n3.管理世界\n4.打开世界文件夹\n5.打开设置")
         option = input()
@@ -113,7 +113,7 @@ if __name__ == '__main__':
                         print("是否打开世界文件夹？y.打开 其他.不打开")
                         y = input()
                         if y == 'Y' or y == 'y':
-                            path = os.path.abspath('agent\\memory\\' + world_name)
+                            path = os.path.abspath('memory\\' + world_name)
                             os.startfile(path)
                 elif option2 == '2':
                     world_name, manager = input_world_name()
