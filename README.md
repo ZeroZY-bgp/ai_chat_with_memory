@@ -1,11 +1,13 @@
 # 自定义AI虚拟人-基于本地多元记忆的大模型应用
 ## 简介
-:robot:自定义虚拟对话AI，可自定义人设和世界观，支持记忆检索。用户可在与AI的不断对话中修改记忆内容，以达到用户的理想人设（建议基于GPT3.5或包装自己的大模型接口使用）。
+:robot:自定义虚拟人，可自定义人设和世界观，支持记忆检索。用户可在与AI的不断对话中修改记忆内容，以达到用户的理想人设（建议基于GPT3.5或包装自己的大模型接口使用）。
 
 :bulb:本项目启发于[langchain](https://python.langchain.com/en/latest/index.html)、[langchain-ChatGLM](https://github.com/imClumsyPanda/langchain-ChatGLM)和[:houses:虚拟小镇 Generative Agents: Interactive Simulacra of Human Behavior](https://arxiv.org/pdf/2304.03442.pdf)。
 
 :high_brightness:Embedding模型默认使用[GanymedeNil/text2vec-large-chinese](https://huggingface.co/GanymedeNil/text2vec-large-chinese/tree/main)，LLM默认使用GPT3.5。
 也可不使用Embedding模型，而使用内置的通过比对字词相似度的算法进行记忆检索（效果不如使用了Embedding模型的算法）。
+
+:ladder:目标建立一个高可扩展性的自定义虚拟人系统。
 
 ### :student:与ai对话
 ```commandline
@@ -91,7 +93,7 @@ python main.py
 是否打开世界文件夹？y.打开 其他.不打开
 >>>y
 ```
-如果是Windows操作系统，此时会通过文件管理器打开该世界所在的文件夹。
+如果是Windows操作系统，此时会通过:open_file_folder:文件管理器打开该世界所在的文件夹。
 
 #### :performing_arts:人物对话
 修改config.ini以下参数:
@@ -126,7 +128,7 @@ user：
 ```
 
 ### :screwdriver:指令系统
-项目内置了指令系统，意在方便用户对记忆文件进行修改。
+项目内置了指令系统，意在方便对记忆文件进行修改。用户在与AI的对话中可以使用指令。
 常用指令：
 ```commandline
 /help 打开指令帮助
@@ -142,6 +144,6 @@ user：
 默认提示词模板位于[此处](template/__init__.py)。对话时会根据检索的记忆对相应板块的标记进行替换。
 
 ### :hammer_and_wrench:高级
-dev_settings.ini是开发者设置，可以将DEBUG_MODE设置为True，就能在对话中查看记忆检索的情况，以此辅助记忆文件修改。
+dev_settings.ini是开发者设置，将DEBUG_MODE设置为True就能在对话中查看记忆检索的情况，以此辅助记忆文件修改。
 
 ### :thinking:为什么是 [实体记忆]、[对话记忆]、[事件记忆]？
