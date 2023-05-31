@@ -1,6 +1,6 @@
 # 自定义AI虚拟人-基于本地多元记忆的大模型应用
 ## 简介
-:robot:自定义虚拟对话ai，可自定义人设和世界观，支持记忆检索。用户可在与ai的不断对话中修改记忆内容，以达到用户的理想人设（建议基于GPT3.5或包装自己的大模型接口使用）。
+:robot:自定义虚拟对话AI，可自定义人设和世界观，支持记忆检索。用户可在与AI的不断对话中修改记忆内容，以达到用户的理想人设（建议基于GPT3.5或包装自己的大模型接口使用）。
 
 :bulb:本项目启发于[langchain](https://python.langchain.com/en/latest/index.html)、[langchain-ChatGLM](https://github.com/imClumsyPanda/langchain-ChatGLM)和[虚拟小镇:houses: Generative Agents: Interactive Simulacra of Human Behavior](https://arxiv.org/pdf/2304.03442.pdf)。
 ### :student:与ai对话
@@ -54,3 +54,10 @@ python main.py
 以此影响对话。用户在对话中可通过指令打开记忆文件或提示词，修改人设和世界观。
 
 ## :open_book:指南
+主目录下的config.ini文件是与AI对话时的基本配置文件。
+
+该项目使用的大致流程：创建世界->修改提示词、人设->与AI对话->若未达到用户期望，则修改对话内容或提示词、人设等->与AI对话->...
+
+### example
+>>>python main.py
+> 
