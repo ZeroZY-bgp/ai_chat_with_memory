@@ -68,7 +68,7 @@ python main.py
 ```commandline
 python main.py
 ```
-#### 创建新世界
+#### :framed_picture:创建新世界
 ```commandline
 【---欢迎使用AI chat with memory---】
 输入数字以选择功能：
@@ -93,7 +93,7 @@ python main.py
 ```
 如果是Windows操作系统，此时会通过文件管理器打开该世界所在的文件夹。
 
-#### 人物对话
+#### :performing_arts:人物对话
 修改config.ini以下参数:
 
 [AI]
