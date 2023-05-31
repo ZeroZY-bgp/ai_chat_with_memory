@@ -203,7 +203,6 @@ class MainAgent:
             if self.voice_enabled:
                 voice_thread.join()
         else:
-            # print(self.ai_name, ":{}\n".format(ans))
             for i in range(0, len(p_ans), self.words_per_line):
                 print(p_ans[i:i + self.words_per_line])
             if self.voice_enabled:

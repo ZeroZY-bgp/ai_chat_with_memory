@@ -1,11 +1,10 @@
 from typing import List
 
 from langchain import FAISS
-from langchain.text_splitter import CharacterTextSplitter
 
-from tools.text import SimpleTextFilter, ChineseTextSplitter, EntityTextFragmentFilter, fragment_text, \
+from tools.text import SimpleTextFilter, EntityTextFragmentFilter, fragment_text, \
     EntityVectorStoreFragmentFilter, SentenceSplitter, LineSplitter
-from tools.utils import load_docs, load_txt
+from tools.utils import load_txt
 
 
 def docs_to_lst(docs):
@@ -192,8 +191,11 @@ class VectorStoreTool:
     def dialog_fragment(self, query, dialog_mem):
         dialog_mem = fragment_text(dialog_mem, self.ssp)
         # 再次过滤
-        vs = FAISS.from_texts(dialog_mem, self.embeddings)
-        dialog_with_score = vs.similarity_search_with_score(query, self.history_top_k)
+        try:
+            vs = FAISS.from_texts(dialog_mem, self.embeddings)
+            dialog_with_score = vs.similarity_search_with_score(query, self.history_top_k)
+        except IndexError:
+            return []
         res_lst = []
         for doc in dialog_with_score:
             res_lst.append(self.ai_name + '说：' + doc[0].page_content)
