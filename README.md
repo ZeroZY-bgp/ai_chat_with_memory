@@ -1,6 +1,7 @@
 # AI自定义虚拟人-基于本地记忆的大模型应用
 # 简介
 :robot:自定义虚拟对话ai，可自定义人设和世界观，支持记忆检索。用户可在与ai的不断对话中修改记忆内容，以达到用户的理想人设（建议基于GPT3.5或包装自己的大模型接口使用）。
+
 :bulb:本项目启发于[langchain](https://python.langchain.com/en/latest/index.html)和[langchain-ChatGLM](https://github.com/imClumsyPanda/langchain-ChatGLM)。
 ### 与ai对话
 ```commandline
