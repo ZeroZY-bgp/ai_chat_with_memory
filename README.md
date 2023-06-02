@@ -223,4 +223,4 @@ QQ:736530911
 
 vx:
 
-[](pics/contact.png)
+![联系方式](pics/contact.png)
