@@ -61,7 +61,8 @@ class MainAgent:
             self.use_embed_model = True
         # store
         if self.use_embed_model:
-            self.store_tool = VectorStoreTool(self.info, self.embeddings, self.entity_top_k, self.history_top_k, self.event_top_k)
+            self.store_tool = \
+                VectorStoreTool(self.info, self.embeddings, self.entity_top_k, self.history_top_k, self.event_top_k)
         else:
             # 简单的字词对比引擎
             self.store_tool = SimpleStoreTool(self.info, self.entity_top_k, self.history_top_k, self.event_top_k)
@@ -80,7 +81,6 @@ class MainAgent:
         # 加载短期对话历史
         self.load_history(self.basic_history)
         # 窗口控制
-        self.basic_token_len = 0
         self.total_token_size = 0
         print("【---" + self.ai_name + "对话模型加载完成---】")
         # ---voice
@@ -169,9 +169,11 @@ class MainAgent:
         # ---处理对话历史
         self.cur_prompt = self.history[0][0]
         self.history.append((q_start + query, self.ai_name + '说：' + ans))
-        self.total_token_size += (len(ans) + len(query))
 
-        print("Token size:", self.total_token_size + context_len)
+        # 计算当前使用的token数
+        self.calc_token_size()
+
+        print("Token size:", self.total_token_size)
 
         # 恢复最开头的提示词
         self.history[0] = self.basic_history[0]
@@ -214,6 +216,11 @@ class MainAgent:
     def save_dialog_to_file(self, dialog):
         append_to_str_file(self.info.history_path, dialog)
 
+    def calc_token_size(self):
+        self.total_token_size = 0
+        for dialog in self.history:
+            self.total_token_size += (len(dialog[0]) + len(dialog[1]))
+
     def get_context_window(self, query):
         lines = load_last_n_lines(self.info.history_path, self.similarity_comparison_context_window - 1)
         comparison_string = ' '.join(line for line in lines)
@@ -237,8 +244,6 @@ class MainAgent:
 
     def load_history(self, basic_history):
         self.basic_history = basic_history
-        self.basic_token_len = len(self.basic_history[0][0]) + len(self.basic_history[0][1])
-        self.total_token_size = 0
         if os.path.exists(self.info.history_path) and os.path.getsize(self.info.history_path) == 0:
             # 历史记录为空
             self.history = copy.deepcopy(self.basic_history)
