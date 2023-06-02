@@ -215,3 +215,12 @@ dev_settings.ini是开发者设置，将DEBUG_MODE设置为True就能在对话�
 - 欢迎提供更好的提示词想法。
 
 - 欢迎提供利用该框架得到的优秀人设案例。
+
+## :incoming_envelope:联系方式
+邮箱：736530911@qq.com
+
+QQ:736530911
+
+vx:
+
+![联系方式](pics/contact.png)
