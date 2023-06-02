@@ -7,7 +7,7 @@
 :high_brightness:Embedding模型默认使用[GanymedeNil/text2vec-large-chinese](https://huggingface.co/GanymedeNil/text2vec-large-chinese/tree/main)，LLM默认使用GPT3.5。
 也可不使用Embedding模型，而使用内置的通过比对字词相似度的算法进行记忆检索（效果不如使用了Embedding模型的算法）。
 
-:ladder:目标建立一个高可扩展性的自定义虚拟人系统。
+:ladder:目标建立一个高代码扩展性的自定义虚拟人系统。
 
 ### :student:与ai对话
 ```commandline
@@ -130,6 +130,8 @@ python main.py
 ```
 如果是Windows操作系统，此时会通过:open_file_folder:文件管理器打开该世界所在的文件夹。
 
+注：如果自建txt文件，则必须保证是utf-8编码。
+
 #### :performing_arts:人物对话
 修改config.ini以下参数:
 
@@ -194,9 +196,10 @@ dev_settings.ini是开发者设置，将DEBUG_MODE设置为True就能在对话�
 
 ## :page_with_curl:To do list
 - [ ] 多人对话下的指令系统
-- [ ] 完善多人对话提示词
+- [ ] 多人对话提示词
 - [ ] UI界面（need help!）
 - [ ] 重写声音模块，增强声音模块的扩展性
+- [ ] 优化记忆检索逻辑
 - [ ] 可能让AI更有时间、空间的观念
 - [ ] 可能加入反思（目前事件记忆是一个简单的替代）
 
