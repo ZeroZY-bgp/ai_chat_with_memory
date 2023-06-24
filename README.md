@@ -4,7 +4,7 @@
 
 :bulb:本项目启发于[langchain](https://python.langchain.com/en/latest/index.html)、[langchain-ChatGLM](https://github.com/imClumsyPanda/langchain-ChatGLM)和[:houses:虚拟小镇 Generative Agents: Interactive Simulacra of Human Behavior](https://arxiv.org/pdf/2304.03442.pdf)。
 
-:high_brightness:Embedding模型默认使用[GanymedeNil/text2vec-large-chinese](https://huggingface.co/GanymedeNil/text2vec-large-chinese/tree/main)，LLM默认使用GPT3.5。
+:high_brightness:对话模型默认使用GPT3.5（需要api key），Embedding模型默认使用[GanymedeNil/text2vec-large-chinese](https://huggingface.co/GanymedeNil/text2vec-large-chinese/tree/main)，LLM默认使用GPT3.5。
 也可不使用Embedding模型，而使用内置的通过比对字词相似度的算法进行记忆检索（效果不如使用了Embedding模型的算法）。
 
 :ladder:目标建立一个高代码扩展性的自定义虚拟人系统。
@@ -104,7 +104,9 @@ pip install -r requirements.txt
 注：如果自建txt文件，则必须保证是utf-8编码。
 
 #### :performing_arts:人物对话
-修改config.ini以下参数（后续可运行run.bat用界面修改）:
+打开config.ini，使用GPT3.5则需要api key。
+
+修改以下参数（后续可运行run.bat用界面修改）:
 
 [SINGLE_AI]
 
