@@ -5,7 +5,7 @@ from typing import List
 from langchain.embeddings import HuggingFaceEmbeddings, OpenAIEmbeddings
 
 from agent import MainAgent
-from command import command_cleanup_task, Pool, command_flags, execute_command
+from command import command_cleanup_task, Pool, command_flags, execute_command, debug_msg_pool
 from tools.utils import delete_last_line
 
 
@@ -14,19 +14,26 @@ def get_class(module_name, class_name):
     return getattr(module, class_name)
 
 
-def create_llm(llm_class_name, temperature, device):
-    llm_class = get_class("agent.llm", llm_class_name)
-    llm_instance = llm_class(temperature)
+def create_llm(config):
+    llm_class = get_class("agent.llm", config.LLM)
+    llm_instance = llm_class(temperature=config.temperature,
+                             max_token=config.dialog_max_token,
+                             model_name=config.model_name,
+                             streaming=config.streaming)
     if hasattr(llm_instance, 'load_model'):
         llm_instance.load_model()
     if hasattr(llm_instance, 'set_device'):
-        llm_instance.set_device(device)
+        llm_instance.set_device(config.model_device)
     return llm_instance
 
 
-def create_embedding_model(embed_model_path, embed_device):
-    return HuggingFaceEmbeddings(model_name=embed_model_path,
-                                 model_kwargs={'device': embed_device})
+def create_huggingface_embedding_model(config):
+    return HuggingFaceEmbeddings(model_name=config.embedding_model,
+                                 model_kwargs={'device': config.embedding_model_device})
+
+
+def create_openai_embedding_model():
+    return OpenAIEmbeddings()
 
 
 class Sandbox:
@@ -42,61 +49,79 @@ class Sandbox:
         self.multi_agent_chat_strategy = 'round'
         self.ai_names = None
         self.cur_ai = ''
+        self.cur_agent = None
         self.auto = False
         self.delay_s = 10
+        self.tmp_msg = ''
+
+    def cur_agent_set_identity(self, world_name, ai_name, user_name):
+        self.cur_agent.set_identity(world_name, ai_name, user_name)
+        # 重要：切换了角色后指令池要重置
+        command_flags.reset()
+
+    def cur_agent_reload_config(self, config):
+        self.cur_agent.reload_config(config)
+
+    def cur_agent_reload_dev_config(self):
+        self.cur_agent.reload_dev_config()
+
+    def get_tmp_message(self):
+        return self.tmp_msg
 
     def set_models(self, config):
-        self.language_model = create_llm(config['MODEL']['name'],
-                                         config.getfloat('MODEL', 'temperature'),
-                                         config['MODEL']['model_device'])
-        self.use_embed_model = config.getboolean('MODEL', 'use_embed_model')
-        if self.use_embed_model:
-            self.embedding_model = create_embedding_model(config['MODEL']['embed_model'],
-                                                          config['MODEL']['embed_model_device'])
+        self.language_model = create_llm(config)
 
-    def init_agent(self, config, world_name, ai_name):
+        if config.use_embedding_model:
+            if config.embedding_model == 'openai':
+                self.embedding_model = create_openai_embedding_model()
+            else:
+                self.embedding_model = create_huggingface_embedding_model(config)
+
+    def init_global_agent(self, config):
+        self.one_agent = True
+        self.set_models(config)
+        self.cur_agent = self.init_one_agent(config, config.world_name, config.ai_name)
+        self.default_user_name = self.cur_agent.user_name
+
+    def init_one_agent(self, config, world_name, ai_name):
         return MainAgent(world_name, ai_name, self.language_model, self.embedding_model, config)
 
-    def chat_with_one_agent(self, config):
-        self.one_agent = True
-        world_name = config['WORLD']['name']
-        ai_name = config['AI']['name']
-        self.set_models(config)
-        agent = self.init_agent(config, world_name, ai_name)
-        self.default_user_name = agent.user_name
-        print("---初始化完成，对话开始---")
-        print("'输入/help'可获取指令列表")
-        while True:
-            self.chat_str = ''
-            while self.chat_str == '':
-                self.chat_str = input((self.default_user_name + "：") if self.default_user_name != '' else 'user：')
-            back_msg = self.check_command(self.chat_str, agent)
-            if back_msg == 'exit':
-                return
-            if back_msg == 'chat':
-                agent.chat(self.chat_str)
+    def chat(self, chat_str):
+        self.chat_str = chat_str
+        self.tmp_msg = self.check_command(chat_str, self.cur_agent)
+        if self.tmp_msg == 'chat':
+            return self.cur_agent.chat(self.chat_str)
+        else:
+            return None
 
-    def chat_with_multi_agent(self, ai_names: List[str], config):
-        if len(ai_names) == 0:
-            print("空ai列表，请检查参数")
-            return
+    # def chat_with_one_agent(self, config):
+    #     self.init_global_agent(config)
+    #     print("---初始化完成，对话开始---")
+    #     print("'输入/help'可获取指令列表")
+    #     while True:
+    #         self.chat_str = ''
+    #         while self.chat_str == '':
+    #             self.chat_str = input((self.default_user_name + "：") if self.default_user_name != '' else 'user：')
+    #         msg = self.chat(self.chat_str)
+    #         if msg == 'sys: exit':
+    #             return
 
-        self.ai_names = ai_names
-        self.cur_ai = config['MULTI_AI']['first']
-        self.chat_str = config['MULTI_AI']['greeting']
-        self.auto = config.getboolean('MULTI_AI', 'auto')
-        self.delay_s = config.getint('MULTI_AI', 'delay') if self.auto else 0
-        self.multi_agent_chat_strategy = config.get('MULTI_AI', 'strategy')
+    def chat_with_multi_agent(self, config):
+        self.ai_names = config.ai_names
+        self.cur_ai = config.first_ai
+        self.chat_str = config.greeting
+        self.multi_agent_chat_strategy = config.multi_agent_chat_strategy
         self.set_models(config)
 
         agents = []
-        for name in ai_names:
-            agents.append(self.init_agent(config, config['WORLD']['name'], name))
+        for name in config.ai_names:
+            agents.append(self.init_one_agent(config, world_name=config.world_name, ai_name=name))
 
         if self.multi_agent_chat_strategy == 'round':
             self.round_chat(agents)
         else:
             print("策略参数错误，请检查config.ini")
+            debug_msg_pool.append_msg("策略参数错误，请检查config.ini")
 
     def round_chat(self, agents: List):
         idx = self.ai_names.index(self.cur_ai)
@@ -133,10 +158,11 @@ class Sandbox:
             if command_flags.retry:
                 if agent.query == '':
                     print("当前没有提问，请输入提问。")
+                    debug_msg_pool.append_msg("当前没有提问，请输入提问。")
                     return 'ai_chat_with_memory sys:当前没有提问，无法重试提问。'
                 # 从临时存储中取出提问
                 self.chat_str = agent.get_tmp_query()
-                if not agent.lock_memory:
+                if not agent.base_config.lock_memory:
                     # 删除历史文件最后一行
                     delete_last_line(agent.info.history_path)
                     # 重新加载临时历史对话
