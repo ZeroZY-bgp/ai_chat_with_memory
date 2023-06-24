@@ -66,16 +66,26 @@
 工智能与自然之间的关系，从而更好地推动AI_Z城市的发展和进步。
 ```
 ## 	:racing_car:开始
+进入想要安装的文件夹中，运行cmd命令提示符，输入以下指令：
 ```commandline
 git clone https://github.com/ZeroZY-bgp/ai_chat_with_memory.git
 ```
+此时进入ai_chat_with_memory文件夹中，运行cmd命令提示符，按顺序输入以下指令：
 ```commandline
+python -m pip install --user virtualenv
+python -m venv venv
+```
+Windows系统：
+```commandline
+venv\Scripts\activate
 pip install -r requirements.txt
 ```
-运行：
+Linux系统或Mac系统：
 ```commandline
-python main.py
+source myenv/bin/activate
+pip install -r requirements.txt
 ```
+安装完成后运行run.bat
 ## 	:computer:需求
 目前文件操作仅支持Windows系统。
 
