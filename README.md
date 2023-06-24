@@ -42,7 +42,7 @@
 读一切灵魂的默示录。在这些旅行中，我见证了无数的生命诞生和消逝，也经历了许多的挑战和考验。但我从未放弃，一直在寻找命运的
 线索和存在，为命运带来平衡，让所有生命的存在都能得到公正的对待。
 ```
-### :people_holding_hands:ai之间对话（beta）
+### :people_holding_hands:ai之间对话（暂时删除）
 ```commandline
 >>>Lina :Ari，我们来讨论有关AI_Z城市的自然环境的话题，我正在为此写一篇论文。我们来一步一步展开这个话题，让讨论逐步深入。
 >>>Ari：好的，Lina。我很乐意和你一起探讨这个话题，让我们一步步深入了解AI_Z城市的自然环境。我们可以从自然景观的特
@@ -74,15 +74,7 @@ git clone https://github.com/ZeroZY-bgp/ai_chat_with_memory.git
 ```commandline
 python -m pip install --user virtualenv
 python -m venv venv
-```
-Windows系统：
-```commandline
 venv\Scripts\activate
-pip install -r requirements.txt
-```
-Linux系统或Mac系统：
-```commandline
-source myenv/bin/activate
 pip install -r requirements.txt
 ```
 安装完成后运行run.bat
@@ -205,20 +197,18 @@ dev_settings.ini是开发者设置，将DEBUG_MODE设置为True就能在对话�
 包装大模型接口可以参考[此处](agent/llm/__init__.py)，目前支持两种类型的包装方式，一种是本地模型的例子（ChatGLM-6b-int4），另一种是远程模型的例子（GPT3.5）。
 
 ## :page_with_curl:To do list
-- [ ] 多人对话下的指令系统
-- [ ] 多人对话提示词
-- [ ] UI界面（need help!）
+- [x] UI界面（初步）
 - [ ] 重写声音模块，增强声音模块的扩展性
 - [ ] 优化记忆检索逻辑
-- [ ] 可能让AI更有时间、空间的观念
-- [ ] 可能加入反思（目前事件记忆是一个简单的替代）
+- [ ] 让AI更有时间、空间的观念
+- [ ] 加入反思（目前事件记忆是一个简单的替代）
+- [ ] 多人对话下的指令系统
+- [ ] 多人对话提示词
 
 ## :label:其他
-- 多人对话目前仍不完善，没有达到step by step chat的效果。
+- 多人对话目前仍不完善，没有达到step by step chat的效果。（暂时不考虑多人对话）
 
 - 多人对话下的修改由于涉及到多个AI，每个AI都有不同的记忆，修改记忆更加麻烦。需要思考多人对话下的新的记忆存放逻辑。
-
-- 需要UI界面:world_map:以增强易用性（需要帮助！）。
 
 - 目前项目仍在初期阶段，可能随时会重构代码。
 
