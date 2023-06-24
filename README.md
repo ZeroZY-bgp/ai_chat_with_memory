@@ -4,7 +4,7 @@
 
 :bulb:本项目启发于[langchain](https://python.langchain.com/en/latest/index.html)、[langchain-ChatGLM](https://github.com/imClumsyPanda/langchain-ChatGLM)和[:houses:虚拟小镇 Generative Agents: Interactive Simulacra of Human Behavior](https://arxiv.org/pdf/2304.03442.pdf)。
 
-:high_brightness:对话模型默认使用GPT3.5（需要api key），Embedding模型默认使用[GanymedeNil/text2vec-large-chinese](https://huggingface.co/GanymedeNil/text2vec-large-chinese/tree/main)，LLM默认使用GPT3.5。
+:high_brightness:对话模型默认使用GPT3.5（需要api key），Embedding模型默认使用[shibing624/text2vec-base-chinese-sentence](https://github.com/shibing624/text2vec)，LLM默认使用GPT3.5。
 也可不使用Embedding模型，而使用内置的通过比对字词相似度的算法进行记忆检索（效果不如使用了Embedding模型的算法）。
 
 :ladder:目标建立一个高代码扩展性的自定义虚拟人系统。
@@ -57,7 +57,7 @@ pip install -r requirements.txt
 默认使用GPT3.5（需要api key），如果使用了本地部署的大模型（包括Embedding），则需关注大模型推理的配置需求。
 - Embedding 模型硬件需求
 
-    默认使用的 Embedding 模型 [GanymedeNil/text2vec-large-chinese-nli](https://github.com/shibing624/text2vec) 约占显存 < 2GB，可修改在 CPU 中运行。
+    默认使用的 Embedding 模型 [shibing624/text2vec-base-chinese-sentence](https://github.com/shibing624/text2vec) 约占显存 < 2GB，可修改在 CPU 中运行。
 
 ## :wrench:如何修改人设和世界观？
 :thinking:本项目的ai通过提示词来进行对话，每次对话会从记忆文件（包括人设、历史对话、角色经历的事件等）中检索与提问或对话相关的内容加入到提示词中，
