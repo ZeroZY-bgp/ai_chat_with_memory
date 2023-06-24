@@ -90,19 +90,6 @@ def fragment_text(text_lst, text_splitter):
     return AnswerFragmentTextSplitter().split_text(text_lst, text_splitter)
 
 
-# def low_semantic_similarity_text_filter(agent, mem_lst):
-#     # 去掉低相似度搜索结果
-#     if len(mem_lst) == 0:
-#         return mem_lst
-#     max_score = mem_lst[-1].metadata["score"]
-#     truncate_i = 0
-#     for i, mem in enumerate(mem_lst):
-#         if mem.metadata["score"] > max_score - agent.semantic_similarity_threshold:
-#             truncate_i = i
-#             break
-#     return mem_lst[truncate_i:]
-
-
 def high_word_similarity_text_filter(agent, mem_lst):
     # 字词相似度比对，算法复杂度o(n^2)
     remaining_memory = copy.deepcopy(mem_lst)  # 创建一个副本以避免在迭代时修改原始列表
@@ -112,7 +99,7 @@ def high_word_similarity_text_filter(agent, mem_lst):
                 str_i = mem_lst[i]
                 str_j = mem_lst[j]
                 sim_score = textdistance.jaccard(str_i, str_j)
-                if sim_score > agent.word_similarity_threshold:
+                if sim_score > agent.dev_config.word_similarity_threshold:
                     # 如果两个字符串的字词相似度超过阈值，则删除较短的字符串（较短的字符串信息含量大概率较少）
                     del_e = mem_lst[i] if len(str_i) < len(str_j) else mem_lst[j]
                     if del_e in remaining_memory:
@@ -303,9 +290,6 @@ class EntityVectorStoreFragmentFilter:
         return entity_names
 
     def filter(self, query, entity_dict, embeddings):
-        # entity_names = self.get_entity_names(entity_mem)
-        # vs = FAISS.from_texts(entity_names, embeddings)
-        # entity_names_with_score = vs.similarity_search_with_score(query, self.top_k)
         # ---打碎实体描述文本
         entity_mem = []
         for name, describe in entity_dict.items():
