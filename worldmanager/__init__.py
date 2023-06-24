@@ -1,31 +1,26 @@
 import os.path
 
-import openai
-
 from tools.generator import DialogEventGenerator
 from tools.utils import create_folder, create_txt, create_txt_no_content, CharacterInfo
 from template import PROMPT_TEMPLATE, IDENTITY_TEMPLATE
 
-openai.api_key = ''
-
 
 class Manager:
-    world_is_created = False
-    world_name = ""
 
     def __init__(self, world_name):
         self.world_name = world_name
         # 主目录
         self.world_folder = "memory/" + self.world_name
         self.extra_txt = self.world_folder + '/extra.txt'
-        if os.path.exists(self.world_folder):
-            self.world_is_created = True
+
+    def check(self, world_name, ai_name):
+        return world_name and ai_name and self.world_is_created(world_name) and self.character_is_created(world_name, ai_name)
 
     def create_event(self, character_lst):
         """
         :param character_lst: 欲创建事件的角色列表
         """
-        if not self.world_is_created:
+        if not self.world_is_created(self.world_name):
             print("世界", self.world_name, "未创建，请先调用'create_world(template=False)'函数创建该世界")
             return
         eg = DialogEventGenerator(self.world_name, character_lst)
@@ -35,17 +30,14 @@ class Manager:
         """
         :param template: 是否使用模板，为True则会生成模板人物
         """
-        if self.world_is_created:
+        if self.world_is_created(self.world_name):
             print("该世界已存在，请检查世界名称或文件夹")
         else:
             # 添加文件树
             # 主目录
             create_folder(self.world_folder)
-            # # 全局信息记录（字典）
-            # create_txt(self.global_txt, '{}')
             # 全局额外信息记录
             create_txt_no_content(self.extra_txt)
-            self.world_is_created = True
             print("世界已创建")
             # 创建模板
             if template:
@@ -58,8 +50,14 @@ class Manager:
                 self.create_character(info, prompt_str, identity_template)
                 print("模板人物已创建")
 
-    def character_is_created(self, ai_name):
-        return os.path.exists(self.world_folder + '/' + ai_name)
+    @staticmethod
+    def character_is_created(world_name, ai_name):
+        world_folder = "memory/" + world_name
+        return os.path.exists(world_folder + '/' + ai_name)
+
+    @staticmethod
+    def world_is_created(world_name):
+        return os.path.exists("memory/" + world_name)
 
     def create_character(self, info: CharacterInfo, prompt_str=PROMPT_TEMPLATE, identity_str=IDENTITY_TEMPLATE):
         """
@@ -68,11 +66,11 @@ class Manager:
         :param prompt_str: 提示词
         :param identity_str: 身份信息
         """
-        if not self.world_is_created:
+        if not self.world_is_created(info.world_name):
             print("世界", self.world_name, "未创建，请先调用'create_world'函数创建该世界")
             return False
         # 检查人物是否存在
-        if self.character_is_created(info.ai_name):
+        if self.character_is_created(info.world_name, info.ai_name):
             print("\"" + info.ai_name + "\"" + "已存在")
             return False
         # 人物文件夹
