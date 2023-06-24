@@ -53,12 +53,12 @@ class ui_surface:
 
     def user_msg_process(self, query, chat_history):
         self.query = query
-        return gr.update(value="", interactive=False), chat_history + [[query, None]]
+        return gr.update(value="", interactive=False), chat_history + [[self.base_config.user_name + ': ' + query, None]]
 
     def get_response(self, chat_history):
         if self.query == '':
             yield chat_history
-        chat_history[-1][1] = ""
+        chat_history[-1][1] = self.base_config.ai_name + ': '
         for chunk_ans in self.sandbox.chat(self.query):
             if chunk_ans is not None:
                 chat_history[-1][1] += chunk_ans
@@ -69,7 +69,7 @@ class ui_surface:
         if self.query == '':
             yield chat_history
         try:
-            chat_history[-1][1] = ""
+            chat_history[-1][1] = self.base_config.ai_name + ': '
         except IndexError:
             raise IndexError("没有历史提问。")
         for chunk_ans in self.sandbox.chat(command_start + command_config['LIST']['retry']):
@@ -91,22 +91,24 @@ class ui_surface:
             debug_msg_pool.append_msg("当前没有提问，无法重试。")
             return user_msg, chat_history
         try:
-            chat_history[-1] = [self.query, None]
+            chat_history[-1] = [self.base_config.user_name + ': ' + self.query, None]
         except IndexError:
-            chat_history = [self.query, None]
+            chat_history = [self.base_config.user_name + ': ' + self.query, None]
         return gr.update(value="", interactive=False), chat_history
 
     def start(self):
         with gr.Blocks(css=css) as demo:
             with gr.Tab("chat"):
                 chatbot = gr.Chatbot(label='聊天', show_label=True)
-                chatbot.style(height=400)
+                chatbot.style(height=500)
 
                 with gr.Column():
                     with gr.Row():
-                        user_msg = gr.Textbox(label='user'
-                        if self.base_config.user_name == '' else self.base_config.user_name,
+                        user_msg = gr.Textbox(label='Send a message',
                                               placeholder="按回车提交")
+                        # user_msg = gr.Textbox(label='user'
+                        # if self.base_config.user_name == '' else self.base_config.user_name,
+                        #                       placeholder="按回车提交")
                     with gr.Accordion(label='指令', open=False):
                         with gr.Row():
                             retry_btn = gr.Button("重试")
