@@ -135,6 +135,8 @@ dev_settings.ini是开发者设置，将DEBUG_MODE设置为True就能在对话�
 
 ## :page_with_curl:To do list
 - [x] UI界面（初步）
+- [ ] 外接知识库
+- [ ] 实时交互系统
 - [ ] 重写声音模块，增强声音模块的扩展性
 - [ ] 优化记忆检索逻辑
 - [ ] 让AI更有时间、空间的观念

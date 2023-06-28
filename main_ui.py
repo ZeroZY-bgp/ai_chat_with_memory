@@ -53,12 +53,13 @@ class ui_surface:
 
     def user_msg_process(self, query, chat_history):
         self.query = query
-        return gr.update(value="", interactive=False), chat_history + [[self.base_config.user_name + ': ' + query, None]]
+        return gr.update(value="", interactive=False), \
+            chat_history + [[self.base_config.user_name + '说: ' + query, None]]
 
     def get_response(self, chat_history):
         if self.query == '':
             yield chat_history
-        chat_history[-1][1] = self.base_config.ai_name + ': '
+        chat_history[-1][1] = ''
         for chunk_ans in self.sandbox.chat(self.query):
             if chunk_ans is not None:
                 chat_history[-1][1] += chunk_ans
@@ -69,7 +70,7 @@ class ui_surface:
         if self.query == '':
             yield chat_history
         try:
-            chat_history[-1][1] = self.base_config.ai_name + ': '
+            chat_history[-1][1] = ''
         except IndexError:
             raise IndexError("没有历史提问。")
         for chunk_ans in self.sandbox.chat(command_start + command_config['LIST']['retry']):
@@ -91,24 +92,21 @@ class ui_surface:
             debug_msg_pool.append_msg("当前没有提问，无法重试。")
             return user_msg, chat_history
         try:
-            chat_history[-1] = [self.base_config.user_name + ': ' + self.query, None]
+            chat_history[-1] = [self.base_config.user_name + '说: ' + self.query, None]
         except IndexError:
-            chat_history = [self.base_config.user_name + ': ' + self.query, None]
+            chat_history = [self.base_config.user_name + '说: ' + self.query, None]
         return gr.update(value="", interactive=False), chat_history
 
     def start(self):
         with gr.Blocks(css=css) as demo:
             with gr.Tab("chat"):
-                chatbot = gr.Chatbot(label='聊天', show_label=True)
-                chatbot.style(height=500)
+                chatbot = gr.Chatbot(label='聊天', show_label=True, height=500)
 
                 with gr.Column():
                     with gr.Row():
                         user_msg = gr.Textbox(label='Send a message',
                                               placeholder="按回车提交")
-                        # user_msg = gr.Textbox(label='user'
-                        # if self.base_config.user_name == '' else self.base_config.user_name,
-                        #                       placeholder="按回车提交")
+
                     with gr.Accordion(label='指令', open=False):
                         with gr.Row():
                             retry_btn = gr.Button("重试")
@@ -134,8 +132,8 @@ class ui_surface:
                                                lines=2,
                                                max_lines=10,
                                                interactive=False,
-                                               elem_id='msg_textbox')
-                    debug_msg_box.style(show_copy_button=True)
+                                               elem_id='msg_textbox',
+                                               show_copy_button=True)
 
                 # 用户信息提交
                 user_msg.submit(fn=self.user_msg_process, inputs=[user_msg, chatbot],
@@ -217,22 +215,22 @@ class ui_surface:
                                                           value=self.base_config.history_window,
                                                           label="初次加载时的上文历史窗口大小", info="范围[0, 20]",
                                                           interactive=True)
-                        window_max_token_slider = gr.Slider(minimum=100, maximum=4000, step=10,
+                        window_max_token_slider = gr.Slider(minimum=100, maximum=16000, step=10,
                                                             value=self.base_config.window_max_token,
                                                             label="对话窗口最大token值（包括提示词）",
-                                                            info="范围[100, 4000]",
+                                                            info="范围[100, 16000]",
                                                             interactive=True)
 
-                        dialog_max_token_slider = gr.Slider(minimum=100, maximum=4000, step=10,
+                        dialog_max_token_slider = gr.Slider(minimum=100, maximum=16000, step=10,
                                                             value=self.base_config.dialog_max_token,
-                                                            label="单次对话最大token值", info="范围[100, 4000]",
+                                                            label="单次对话最大token值", info="范围[100, 16000]",
                                                             interactive=True)
 
-                        token_decrease_size_slider = gr.Slider(minimum=100, maximum=1000,
+                        token_decrease_size_slider = gr.Slider(minimum=100, maximum=4000,
                                                                step=10,
                                                                value=self.base_config.token_decrease,
                                                                label="超过最大token上限时，历史窗口减少的token大小",
-                                                               info="范围[100, 1000]",
+                                                               info="范围[100, 4000]",
                                                                interactive=True)
                         with gr.Row():
                             entity_top_k_slider = gr.Slider(minimum=1, maximum=20, step=1,
@@ -296,9 +294,10 @@ class ui_surface:
                                                                          '（仅提取ai的回答作为记忆，记忆检索中不包含提问）',
                                                                    value=self.dev_config.answer_extract_enabled,
                                                                    interactive=True)
-                    fragment_answer_check_box = gr.Checkbox(label='分割ai回答记忆文本（仅answer_extract_enabled为True时有效）',
-                                                            value=self.dev_config.fragment_answer,
-                                                            interactive=True)
+                    fragment_answer_check_box = gr.Checkbox(
+                        label='分割ai回答记忆文本（仅answer_extract_enabled为True时有效）',
+                        value=self.dev_config.fragment_answer,
+                        interactive=True)
 
                     word_similarity_threshold_slider = gr.Slider(minimum=0.1, maximum=1.0, step=0.01,
                                                                  value=self.dev_config.word_similarity_threshold,

@@ -180,7 +180,7 @@ class SimpleTextFilter:
         tmp_stack = Stack()
         min_num_stack.push({'text': '', 'score': 1.0})
         for t in docs:
-            sim_score = textdistance.jaccard(query, t)
+            sim_score = textdistance.ratcliff_obershelp(query, t)
             if sim_score > min_num_stack.top()['score']:
                 while sim_score > min_num_stack.top()['score']:
                     tmp_stack.push(min_num_stack.pop())

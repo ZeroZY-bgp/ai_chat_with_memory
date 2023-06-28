@@ -107,15 +107,12 @@ class SimpleStoreTool:
         return load_txt(self.info.event_path, self.event_textsplitter)
 
     def get_entity_mem(self, query, store):
-        # entity_mem = docs_to_lst(store)
         return self.entity_text_filter.filter(query, store)
 
     def get_history_mem(self, query, store):
-        # dialog_mem = docs_to_lst(store)
         return self.history_text_filter.filter(query, store)
 
     def get_event_mem(self, query, store):
-        # event_mem = docs_to_lst(store)
         return self.event_text_filter.filter(query, store)
 
     def entity_fragment(self, query, entity_mem):
