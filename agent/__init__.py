@@ -3,7 +3,6 @@ import os
 import random
 import threading
 import time
-
 import openai
 
 from tools.audio import AudioModule
@@ -188,12 +187,14 @@ class MainAgent:
 
         # ---与大模型通信
         ans = ''
+        # total_query = q_start + query + ' ' + self.ai_name + '说：'
+        total_query = q_start + query
         if self.base_config.streaming:
-            for content in self.llm.chat(q_start + query + '\n' + self.ai_name + '说：', self.history):
+            for content in self.llm.chat(total_query, self.history):
                 ans += content
                 yield content
         else:
-            ans = self.llm.chat(q_start + query + '\n' + self.ai_name + '说：', self.history)
+            ans = self.llm.chat(total_query, self.history)
             yield ans
 
         if self.llm.__class__.__name__ == "Gpt3_5LLM" \
