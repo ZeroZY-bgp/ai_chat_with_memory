@@ -64,7 +64,7 @@ if __name__ == '__main__':
                     print("输入想创建的世界名称：", end=' ')
                     world_name = input()
                     manager = Manager(world_name)
-                    if manager.world_is_created:
+                    if manager.world_is_created(world_name):
                         print("该世界已存在")
                     else:
                         print("是否使用模板？(人物为小明，包括提示词、身份信息。)y.使用模板 其他.不使用模板")
@@ -83,7 +83,7 @@ if __name__ == '__main__':
                         print("世界" + world_name + "不存在，请检查输入的世界名称或创建该世界。")
                         break
                     ai_name = input("输入要创建的新人物名称：")
-                    if manager.character_is_created(ai_name):
+                    if manager.character_is_created(world_name, ai_name):
                         print("人物" + ai_name + "已存在，创建操作已取消。")
                         break
                     # 角色提示词
