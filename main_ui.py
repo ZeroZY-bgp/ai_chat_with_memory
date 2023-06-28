@@ -100,16 +100,13 @@ class ui_surface:
     def start(self):
         with gr.Blocks(css=css) as demo:
             with gr.Tab("chat"):
-                chatbot = gr.Chatbot(label='聊天', show_label=True)
-                chatbot.style(height=500)
+                chatbot = gr.Chatbot(label='聊天', show_label=True, height=500)
 
                 with gr.Column():
                     with gr.Row():
                         user_msg = gr.Textbox(label='Send a message',
                                               placeholder="按回车提交")
-                        # user_msg = gr.Textbox(label='user'
-                        # if self.base_config.user_name == '' else self.base_config.user_name,
-                        #                       placeholder="按回车提交")
+
                     with gr.Accordion(label='指令', open=False):
                         with gr.Row():
                             retry_btn = gr.Button("重试")
@@ -135,8 +132,8 @@ class ui_surface:
                                                lines=2,
                                                max_lines=10,
                                                interactive=False,
-                                               elem_id='msg_textbox')
-                    debug_msg_box.style(show_copy_button=True)
+                                               elem_id='msg_textbox',
+                                               show_copy_button=True)
 
                 # 用户信息提交
                 user_msg.submit(fn=self.user_msg_process, inputs=[user_msg, chatbot],
