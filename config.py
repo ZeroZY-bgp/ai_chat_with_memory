@@ -5,6 +5,8 @@ import openai
 model_map = {
     'chatglm-6b-int4': 'ChatGLMLLM',
     'chatglm-6b': 'ChatGLMLLM',
+    'THUDM/chatglm2-6b-int4': 'ChatGLMLLM',
+    'chatglm2-6b-int4': 'ChatGLMLLM',
     'gpt-3.5-turbo': 'GPT3_5LLM',
     'gpt-3.5-turbo-0613': 'GPT3_5LLM',
 }
