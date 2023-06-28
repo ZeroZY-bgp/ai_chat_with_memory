@@ -94,18 +94,6 @@ class Sandbox:
         else:
             return None
 
-    # def chat_with_one_agent(self, config):
-    #     self.init_global_agent(config)
-    #     print("---初始化完成，对话开始---")
-    #     print("'输入/help'可获取指令列表")
-    #     while True:
-    #         self.chat_str = ''
-    #         while self.chat_str == '':
-    #             self.chat_str = input((self.default_user_name + "：") if self.default_user_name != '' else 'user：')
-    #         msg = self.chat(self.chat_str)
-    #         if msg == 'sys: exit':
-    #             return
-
     def chat_with_multi_agent(self, config):
         self.ai_names = config.ai_names
         self.cur_ai = config.first_ai
@@ -167,8 +155,11 @@ class Sandbox:
                     delete_last_line(agent.info.history_path)
                     # 重新加载临时历史对话
                     agent.load_history(agent.basic_history)
+                else:
+                    # 若为锁定记忆模式，需要删除历史记录最后一次对话
+                    agent.history.pop()
                 agent.step -= 1
-            # 执行
+            # 执行“继续说”指令
             elif command_flags.continue_talk:
                 last_ans = agent.last_ans
                 self.chat_str = last_ans
