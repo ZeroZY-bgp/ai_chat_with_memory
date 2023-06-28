@@ -2,7 +2,6 @@ import configparser
 import os
 
 from tools.generator import DialogEventGenerator
-from tools.store import VectorStore
 from tools.utils import load_txt_to_str, append_to_str_file, load_last_n_lines, load_txt_to_lst, load_txt
 
 command_config = configparser.ConfigParser()
@@ -238,11 +237,12 @@ def command_cleanup_task(agent):
         return
 
     if command_flags.history:
-        if agent.base_config.lock_memory:
-            # 历史对话被打开过，重新加载历史对话（仅当lock_memory为True时重新加载）
-            agent.history_store = agent.store_tool.load_history_store()
-        # 重新加载临时历史对话
-        agent.load_history(agent.basic_history)
+        # 历史对话被打开过，重新加载历史对话存储
+        agent.history_store = agent.store_tool.load_history_store()
+        agent.step = 1
+        if not agent.base_config.lock_memory:
+            # 重新加载临时历史对话
+            agent.load_history(agent.basic_history)
     elif command_flags.prompt:
         # 提示词被打开过，重新加载提示词和历史对话
         agent.basic_history = load_txt_to_lst(agent.info.prompt_path)

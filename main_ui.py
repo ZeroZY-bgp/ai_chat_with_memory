@@ -73,6 +73,7 @@ class ui_surface:
             chat_history[-1][1] = ''
         except IndexError:
             raise IndexError("没有历史提问。")
+
         for chunk_ans in self.sandbox.chat(command_start + command_config['LIST']['retry']):
             if chunk_ans is not None:
                 chat_history[-1][1] += chunk_ans
@@ -112,8 +113,8 @@ class ui_surface:
                             retry_btn = gr.Button("重试")
                             clear_btn = gr.Button("清空")
                             dialog_history_btn = gr.Button("历史对话")
-                            context_btn = gr.Button("当前记忆检索内容")
-                            prompt_btn = gr.Button("当前提示词内容")
+                            context_btn = gr.Button("记忆检索内容")
+                            prompt_btn = gr.Button("提示词内容")
                         with gr.Row():
                             folder_btn = gr.Button("角色文件夹")
                             prompt_file_btn = gr.Button("提示词文件")
@@ -129,8 +130,8 @@ class ui_surface:
                 with gr.Accordion(label='调试信息', open=True):
                     debug_msg_box = gr.Textbox(value=msg_init_value,
                                                show_label=False,
-                                               lines=2,
-                                               max_lines=10,
+                                               lines=20,
+                                               max_lines=20,
                                                interactive=False,
                                                elem_id='msg_textbox',
                                                show_copy_button=True)
