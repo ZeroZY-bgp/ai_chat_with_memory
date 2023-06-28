@@ -1,6 +1,7 @@
 import openai
 from abc import abstractmethod
 
+import torch
 from transformers import AutoTokenizer, AutoModel
 
 
@@ -71,17 +72,15 @@ class GPT3_5LLM(BaseLLM):
     def create_massages(query, history):
         # 使用system提示词
         massages = [{'role': 'system', 'content': history[0][0]}]
+        # 如果有自述，则加入messages
+        if history[0][1] != '':
+            massages.append({'role': 'assistant', 'content': history[0][1]})
         for i in range(1, len(history)):
             # 有消息才将信息加入
             if history[i][0] != '':
                 massages.append({'role': 'user', 'content': history[i][0]})
             if history[i][1] != '':
                 massages.append({'role': 'assistant', 'content': history[i][1]})
-        # massages = []
-        # for i in range(0, len(history)):
-        #     massages.append({'role': 'user', 'content': history[i][0]})
-        #     massages.append({'role': 'assistant', 'content': history[i][1]})
-        #
         massages.append({'role': 'user', 'content': query})
 
         return massages
@@ -123,29 +122,57 @@ class ChatGLMLLM(BaseLLM):
     def set_device(self, device):
         self.device = device
 
-    def get_response(self, query, history):
+    def send(self, query, history):
         ans, _ = self.model.chat(
             self.tokenizer,
             query,
             history=history,
             max_length=self.max_token,
-            temperature=self.temperature
+            temperature=self.temperature,
         )
         return ans
+
+    def send_stream(self, query, history):
+        for i, (chunk_ans, _h, p_key) in enumerate(self.model.stream_chat(
+            self.tokenizer,
+            query,
+            history=history,
+            max_length=self.max_token,
+            temperature=self.temperature
+        )):
+            yield chunk_ans
+
+    @staticmethod
+    def create_massages(query, history):
+        messages = ""
+        for dialog in history:
+            messages += dialog[0]
+            messages += dialog[1]
+        messages += query
+        print(messages)
+        return messages
+
+    def get_response(self, query, history):
+        if self.device == 'cuda':
+            torch.cuda.empty_cache()
+        if self.streaming:
+            # 暂时不用send_stream，输出逻辑上和本框架不符
+            return self.send(query, history)
+        else:
+            return self.send(query, history)
 
     def change_model_name(self, model_name="chatglm-6b"):
         self.model_name = model_name
         self.load_model(model_name=model_name)
 
     def load_model(self,
-                   model_name: str = "chatglm-6b-int4",
                    **kwargs):
         self.tokenizer = AutoTokenizer.from_pretrained(
-            model_name,
+            self.model_name,
             trust_remote_code=True
         )
         if self.device == 'cuda':
-            self.model = AutoModel.from_pretrained(model_name, trust_remote_code=True).half().cuda()
+            self.model = AutoModel.from_pretrained(self.model_name, trust_remote_code=True).half().cuda()
         else:
-            self.model = AutoModel.from_pretrained(model_name, trust_remote_code=True).float()
+            self.model = AutoModel.from_pretrained(self.model_name, trust_remote_code=True).float()
         self.model = self.model.eval()
