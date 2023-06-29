@@ -52,6 +52,8 @@ pip install -r requirements.txt
 ```
 安装完成后运行run.bat（对话），edit.bat（编辑世界）。
 ## 	:computer:需求
+python >= 3.10.11
+
 目前文件操作仅支持Windows系统。
 
 默认使用GPT3.5（需要api key），如果使用了本地部署的大模型（包括Embedding），则需关注大模型推理的配置需求。
