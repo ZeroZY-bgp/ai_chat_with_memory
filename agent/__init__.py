@@ -64,7 +64,6 @@ class MainAgent:
         self.history_store = self.store_tool.load_history_store()
         self.event_store = self.store_tool.load_event_store()
 
-        print("【---" + self.ai_name + "记忆模块加载完成---】")
         self.llm = llm
         # 历史对话列表
         self.history = []
@@ -75,7 +74,6 @@ class MainAgent:
         self.load_history(self.basic_history)
         # 窗口控制变量
         self.total_token_size = 0
-        print("【---" + self.ai_name + "对话模型加载完成---】")
         # ---voice
         # ---声音模块
         speak_rate = self.base_config.speak_rate
@@ -89,7 +87,7 @@ class MainAgent:
             rate = 150
         # ---
         self.voice_module = AudioModule(sound_library='local', rate=rate)
-        print("【---" + self.ai_name + "声音模块加载完成---】")
+        print("【---" + self.ai_name + "角色加载完成---】")
         # ---
 
     def set_identity(self, world_name, ai_name, user_name):
