@@ -133,7 +133,7 @@ dev_settings.ini是开发者设置，将DEBUG_MODE设置为True就能在对话�
 
 如果记忆检索情况或回答不理想，可尝试调整dev_settings.ini的各种参数（也可在界面的config tab中设置）。
 
-包装大模型接口可以参考[此处](agent/llm/__init__.py)，目前支持两种类型的包装方式，一种是本地模型的例子（ChatGLM-6b-int4），另一种是远程模型的例子（GPT3.5）。
+包装大模型接口可以参考[此处](llm/__init__.py)，目前支持两种类型的包装方式，一种是本地模型的例子（ChatGLM-6b-int4），另一种是远程模型的例子（GPT3.5）。
 
 ## :page_with_curl:To do list
 - [x] UI界面（初步）

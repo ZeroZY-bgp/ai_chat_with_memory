@@ -15,7 +15,7 @@ def get_class(module_name, class_name):
 
 
 def create_llm(config):
-    llm_class = get_class("agent.llm", config.LLM)
+    llm_class = get_class("llm", config.LLM)
     llm_instance = llm_class(temperature=config.temperature,
                              max_token=config.dialog_max_token,
                              model_name=config.model_name,

@@ -25,7 +25,7 @@ class BaseLLM:
         pass
 
 
-class GPT3_5LLM(BaseLLM):
+class GPTLLM(BaseLLM):
     temperature = 0.1,
     max_token = 1000,
     model_name = 'gpt-3.5-turbo',

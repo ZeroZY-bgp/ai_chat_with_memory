@@ -175,13 +175,13 @@ class MainAgent:
         context_len = self.embedding_context(self.entity_text, self.dialog_text, self.event_text)
         # ------
 
-        # 安全性检查
-        if self.llm.__class__.__name__ == "Gpt3_5LLM" \
-                and self.dev_config.openai_text_moderate \
-                and openai_moderation(self.history[:1], q_start + query):
-            print("WARN: openai使用协议")
-            debug_msg_pool.append_msg("WARN: openai使用协议")
-            return 'no result'
+        # 提问安全性检查
+        # if self.llm.__class__.__name__ == "GptLLM" \
+        #         and self.dev_config.openai_text_moderate \
+        #         and openai_moderation(self.history[:1], q_start + query):
+        #     print("WARN: openai使用协议")
+        #     debug_msg_pool.append_msg("WARN: openai使用协议")
+        #     return 'no result'
 
         # ---与大模型通信
         ans = ''
@@ -195,13 +195,14 @@ class MainAgent:
             ans = self.llm.chat(total_query, self.history)
             yield ans
 
-        if self.llm.__class__.__name__ == "Gpt3_5LLM" \
-                and self.dev_config.openai_text_moderate:
-            res = openai.Moderation.create(input=ans)
-            if res["results"][0]["flagged"]:
-                print(res["results"][0])
-                print("WARN: openai使用协议")
-                debug_msg_pool.append_msg(res["results"][0] + '\n' + "WARN: openai使用协议")
+        # 回答安全性检查
+        # if self.llm.__class__.__name__ == "GptLLM" \
+        #         and self.dev_config.openai_text_moderate:
+        #     res = openai.Moderation.create(input=ans)
+        #     if res["results"][0]["flagged"]:
+        #         print(res["results"][0])
+        #         print("WARN: openai使用协议")
+        #         debug_msg_pool.append_msg(res["results"][0] + '\n' + "WARN: openai使用协议")
         # ---
 
         # ---处理对话历史
